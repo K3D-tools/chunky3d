@@ -1,15 +1,27 @@
 from setuptools import setup, find_packages
 import os
 
+here = os.path.dirname(os.path.abspath(__file__))
+
 
 def requirements():
-
     with open(os.path.join(os.path.dirname(__file__),'requirements.txt')) as f:
         return f.read().splitlines()
 
+
+def version(*parts):
+    version_file = os.path.join(*parts)
+    version_ns = {}
+
+    with open(version_file) as f:
+        exec(f.read(), {}, version_ns)
+
+    return version_ns['__version__']
+
 setup(
-    name="chunky3d",
-    version='0.0.1',
+    name='chunky3d',
+    description='A 3D array-like NumPy-based data structure for large sparsely-populated volumes',
+    version=version(here, 'chunky3d', '_version.py'),
     license='MIT',
     install_requires=requirements(),
     packages=find_packages(),

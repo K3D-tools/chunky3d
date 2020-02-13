@@ -168,7 +168,7 @@ def max(sparse, multiprocesses=1):
     return f(sparse.run(
                         lambda data, prev: (data, f([prev, f(data)])),
                         prev=min_dtype(sparse.dtype),
-                        multiprocesses = multiprocesses,
+                        multiprocesses=multiprocesses,
                         )
             )
 
@@ -303,7 +303,10 @@ def thinning_diameter(sparse, envelope, multiprocesses=2):
     (i.e. diameter of the local maximal fitting sphere)
     """
     if multiprocesses == 1:
-        warnings.warn('Disabled multiprocessing creates a pool of threads which does not get deallocated. Subsequent calls with multiprocessing **enabled** will be locked indefinitely.')
+        warnings.warn(
+            'Disabled multiprocessing creates a pool of threads which does not get deallocated. '
+            'Subsequent calls with multiprocessing **enabled** will be locked indefinitely.'
+        )
     sparse.run(lambda data, prev: (itk.GetArrayFromImage(
         itk.MedialThicknessImageFilter3D.New(
             itk.GetImageFromArray(data)
