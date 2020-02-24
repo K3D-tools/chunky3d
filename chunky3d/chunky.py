@@ -1037,10 +1037,18 @@ class Sparse:
         with open(filename, "rb") as file:
             d = file.read()
 
+            msgpack_args = {
+                'object_hook': m.decode,
+                'use_list': False,
+                'strict_map_key': False,  # tuple as "map key" (msgpack 1.0)
+                'raw': True,  # return keys as b'shape' (msgpack 1.0)
+            }
+
             try:
-                data = msgpack.unpackb(d, object_hook=m.decode, use_list=False)
-            except:
-                data = msgpack.unpackb(zlib.decompress(d), object_hook=m.decode, use_list=False)
+                data = msgpack.unpackb(d, **msgpack_args)
+            except msgpack.exceptions.UnpackException:
+                # FIXME: not a great way to detect compression, to say the least.
+                data = msgpack.unpackb(zlib.decompress(d), **msgpack_args)
 
             s = Sparse(data[b'shape'], chunks=data[b'chunks'], fill_value=data[b'fill_value'],
                        dtype=np.dtype(data[b'dtype']), origin=data[b'origin'], spacing=data[b'spacing'])
