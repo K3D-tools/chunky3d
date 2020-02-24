@@ -1046,7 +1046,7 @@ class Sparse:
 
             try:
                 data = msgpack.unpackb(d, **msgpack_args)
-            except msgpack.exceptions.UnpackException:
+            except msgpack.exceptions.ExtraData:
                 # FIXME: not a great way to detect compression, to say the least.
                 data = msgpack.unpackb(zlib.decompress(d), **msgpack_args)
 
