@@ -5,7 +5,7 @@ here = os.path.dirname(os.path.abspath(__file__))
 
 
 def requirements():
-    with open(os.path.join(os.path.dirname(__file__),'requirements.txt')) as f:
+    with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
         return f.read().splitlines()
 
 
@@ -21,6 +21,8 @@ def version(*parts):
 setup(
     name='chunky3d',
     description='A 3D array-like NumPy-based data structure for large sparsely-populated volumes',
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     version=version(here, 'chunky3d', '_version.py'),
     license='MIT',
     install_requires=requirements(),
@@ -37,6 +39,11 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
+        # currently missing deps
+        # 'Programming Language :: Python :: 3.8',
     ]
+    , project_urls={
+        'Source': 'https://github.com/K3D-tools/chunky3d',
+        'Tracker': 'https://github.com/K3D-tools/chunky3d/issues',
+    }
 )
