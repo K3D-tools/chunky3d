@@ -330,12 +330,21 @@ def to_indices_value(sparse):
     return np.vstack(coords)
 
 
-def label(sparse, multiprocesses=1):
+def label(sparse, multiprocesses=1, fully_connected=False):
+    """
+    Label the objects in a binary image.
+    ConnectedComponentImageFilter labels the objects in a binary image (non-zero pixels are considered to be objects, zero-valued pixels are considered to be background). Each distinct object is assigned a unique label. The final object labels start with 1 and are consecutive.
+    :param sparse: Sparse instance
+    :param multiprocesses: number of processes
+    :param fully_connected: whether the connected components are defined strictly by face connectivity or by face+edge+vertex connectivity. Set `True` for objects that are 1 pixel wide.
+    """
     if multiprocesses != 1:
         raise NotImplementedError()
 
     if sparse.dtype != np.uint32:
         warnings.warn('label in most cases require uint32 data to work properly')
+        
+    connected_compontent_filter.SetFullyConnected(fully_connected)
 
     G = nx.Graph()
 
