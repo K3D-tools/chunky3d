@@ -1,0 +1,8 @@
+path_classifiers:
+  test:
+    - test
+
+extraction:
+  python:
+    python_setup:
+      version: 3
