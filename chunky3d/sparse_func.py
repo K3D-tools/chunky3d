@@ -398,7 +398,7 @@ def label(sparse, multiprocesses=1, fully_connected=False):
         if nk in sparse._grid.keys():
             process(sparse.get_chunk(k)[:, :, -1], sparse.get_chunk(nk)[:, :, 0])
 
-    cutted_G = list(G.subgraph(c) for c in connected_components(G))
+    cutted_G = list(G.subgraph(c) for c in nx.connected_components(G))
     val_map = {v: k + 1 for k, g in enumerate(cutted_G) for v in g}
 
     for idx, k in enumerate(set(range(1, component_sum + 1)) - val_map.keys()):
