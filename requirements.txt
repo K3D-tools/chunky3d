@@ -1,6 +1,6 @@
 dill
 itk
-itk-binarythinning3d
+itk-thickness3d
 msgpack
 msgpack_numpy
 networkx
