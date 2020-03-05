@@ -149,6 +149,21 @@ class TestImage(unittest.TestCase):
         self.assertEqual(after_grid_mask, defragmented + mask_size - None.__sizeof__())
 
 
+class TestBroadcasting(unittest.TestCase):
+    @unittest.skip
+    def test_too_small(self):
+        # base behavior
+        n = np.zeros((4, 4, 4))
+        with self.assertRaises(ValueError) as cm:
+            n[:3, :3, :3] = np.ones((2, 2, 2))
+        self.assertTrue(str(cm.exception).startswith('could not broadcast'))
+
+        # chunky behavior
+        s = Sparse(shape=(4, 4, 4))
+        with self.assertRaises(ValueError) as cm:
+            s[:3, :3, :3] = np.ones((2, 2, 2))
+        self.assertTrue(str(cm.exception).startswith('could not broadcast'))
+
 class TestInterpolation(unittest.TestCase):
     def setUp(self):
         self.s = Sparse(shape=(3, 3, 3), chunks=(2, 2, 2))
@@ -161,14 +176,16 @@ class TestInterpolation(unittest.TestCase):
         s = Sparse(shape=(2, 2, 2), chunks=(2, 2, 2))
         s[1, 1, 1] = 1.0
         # RuntimeError: Missing grid_mask in sparse array. Use update_grid_mask() before point_probe().
-        self.assertRaises(RuntimeError, point_probe, np.zeros((1, 3)), s)
+        with self.assertRaises(RuntimeError):
+            point_probe(np.zeros((1, 3)), s)
 
     def test_non_contiguous_memory_blocks(self):
         s = Sparse(shape=(3, 3, 3), chunks=(2, 2, 2))
         s[1, 1, 1] = 1.0
         s[2, 2, 2] = 1.0
         # Exception: Memory blocks have wrong len: 2, use make_dense_data() to fix.
-        self.assertRaises(Exception, point_probe, np.zeros((1, 3)), s)
+        with self.assertRaises(Exception):
+            point_probe(np.zeros((1, 3)), s)
 
     def test_empty_zeros(self):
         self.assertEqual(point_probe(np.zeros((1, 3)), self.s), 0.0)

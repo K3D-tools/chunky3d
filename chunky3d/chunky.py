@@ -9,7 +9,7 @@ import zlib
 from numba import jit, njit, prange
 
 from .chunk import Chunk
-from .helpers import *
+from .helpers import pad_to_chunk, slice_normalize
 from .multiprocesses import ProcessPool
 
 import platform
@@ -241,8 +241,11 @@ class Sparse:
         return total
 
     def make_dense_data(self, envelope=0):
+        """Defragment self._memory_blocks into a single array with possible envelope around chunks."""
+
         if len(self._memory_blocks) == 1 and self._memory_blocks_with_holes == 0 \
                 and self._memory_blocks[0].shape[2] == self._chunk_shape[2] + envelope * 2:
+            # already defragmented
             return
 
         dense_data = np.zeros(((self._chunk_shape[0] + envelope * 2) * self.nchunks_initialized,
@@ -888,7 +891,7 @@ class Sparse:
     def crop_chunks(self, crop=((0, 0), (0, 0), (0, 0))):
         """
         Crops chunks around Sparse
-        :param: number of full chunks to crop ((z_before, z_after),(y_before, y_after), (x_before, x_after))
+        :param: number of full chunks to crop ((z_before, z_after), (y_before, y_after), (x_before, x_after))
         :returns: new Sparse object
         """
         crop = np.array(crop)
