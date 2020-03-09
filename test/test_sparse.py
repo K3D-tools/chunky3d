@@ -150,7 +150,6 @@ class TestImage(unittest.TestCase):
 
 
 class TestBroadcasting(unittest.TestCase):
-    @unittest.skip
     def test_too_small(self):
         # base behavior
         n = np.zeros((4, 4, 4))
@@ -160,9 +159,47 @@ class TestBroadcasting(unittest.TestCase):
 
         # chunky behavior
         s = Sparse(shape=(4, 4, 4))
+
         with self.assertRaises(ValueError) as cm:
             s[:3, :3, :3] = np.ones((2, 2, 2))
+        # time will show if this message is constant
+        self.assertTrue(str(cm.exception).startswith('operands could not be broadcast together'))
+
+    def test_too_big(self):
+        # base behavior
+        n = np.zeros((4, 4, 4))
+        with self.assertRaises(ValueError) as cm:
+            n[:3, :3, :3] = np.ones((4, 4, 4))
         self.assertTrue(str(cm.exception).startswith('could not broadcast'))
+
+        # chunky behavior
+        s = Sparse(shape=(4, 4, 4))
+
+        with self.assertRaises(ValueError) as cm:
+            s[:3, :3, :3] = np.ones((4, 4, 4))
+        # time will show if this message is constant
+        self.assertTrue(str(cm.exception).startswith('operands could not be broadcast together'))
+
+    def test_uniform_value(self):
+        s = Sparse(shape=(4, 4, 4))
+        s[...] = 3
+        self.assertTrue((s[...] == np.full((4, 4, 4), 3)).all())
+        s[...] = 9
+        self.assertTrue((s[...] == np.full((4, 4, 4), 9)).all())
+
+    def test_step_broadcast(self):
+        expected = np.zeros((3, 3, 3))
+        expected[:2] = [3, 4, 5]
+        s = Sparse(shape=(3, 3, 3))
+        s[:2] = [3, 4, 5]
+        self.assertTrue((s[...] == expected).all())
+
+        expected = np.zeros((3, 3, 3))
+        expected[::2] = [3, 4, 5]
+        s = Sparse(shape=(3, 3, 3))
+        s[::2] = [3, 4, 5]
+        self.assertTrue((s[...] == expected).all())
+
 
 class TestInterpolation(unittest.TestCase):
     def setUp(self):

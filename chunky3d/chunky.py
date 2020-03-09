@@ -9,7 +9,7 @@ import zlib
 from numba import jit, njit, prange
 
 from .chunk import Chunk
-from .helpers import pad_to_chunk, slice_normalize
+from .helpers import pad_to_chunk, slice_normalize, slice_shape, check_start_end
 from .multiprocesses import ProcessPool
 
 import platform
@@ -496,7 +496,7 @@ class Sparse:
 
         # TODO: add warrning if val.dtype != self.dtype
         if (idx < np.array([0, 0, 0])).any() or (idx >= np.array(self._block_shape)).any():
-            raise IndexError("Index out of range.")
+            raise IndexError(f"Index {idx} out of range {self._block_shape}.")
 
         if isinstance(val, np.ndarray):
             if val.shape != self._chunk_shape:
@@ -677,8 +677,7 @@ class Sparse:
         return prev
 
     def raw_run(self, func, start, end, prev=None, step=(1, 1, 1), *args):
-        if (start < np.array([0, 0, 0])).any() or (end > np.array(self._shape)).any():
-            raise Exception("Index out of range.")
+        check_start_end(start, end, self._shape)
 
         s = np.array(start)
         e = np.array(end)
@@ -760,10 +759,9 @@ class Sparse:
             raise Exception("Array is expected")
 
         s = np.array(start)
-        e = np.array(s + val.shape)
+        e = s + np.array(val.shape) * step
         cs = np.array(self._chunk_shape)
-        if (s < np.array([0, 0, 0])).any() or (e > np.array(self._shape)).any():
-            raise Exception("Index out of range.")
+        check_start_end(s, e, self._shape, check_end=(np.abs(step) == 1).all())
 
         blck = (np.floor_divide(s, self._chunk_shape), np.ceil(np.divide(e, self._chunk_shape)).astype(np.uint32))
 
@@ -793,8 +791,7 @@ class Sparse:
                         self.set_chunk((i, j, k), ret)
 
                     idx[2] += ids[2]
-                    gs[2] = self._chunk_to_global_coord(ls_c, np.floor_divide(le - ls - 1, step) * step + ls)[2] + step[
-                        2]
+                    gs[2] = self._chunk_to_global_coord(ls_c, np.floor_divide(le - ls - 1, step) * step + ls)[2] + step[2]
                 idx[2] = 0
                 idx[1] += ids[1]
                 gs[2] = s[2]
@@ -821,7 +818,7 @@ class Sparse:
             return self.fill_value
 
     def __getitem__(self, key):
-        if not isinstance(key[0], slice) and not isinstance(key[1], slice) and not isinstance(key[2], slice):
+        if np.shape(key) == (3,) and all(isinstance(k, int) for k in key):
             return self._simple_get1(key)
 
         key = slice_normalize(key, self.shape)
@@ -861,31 +858,23 @@ class Sparse:
 
     def __setitem__(self, key, val):
         # simple case (single element)
-        if (
-                np.shape(val) == ()
-                and not isinstance(key[0], slice)
-                and not isinstance(key[1], slice)
-                and not isinstance(key[2], slice)
-        ):
+        if (np.shape(val) == () and np.shape(key) == (3,) and all(isinstance(k, int) for k in key)):
             self._simple_set1(key, val)
             return
 
         # general case
         key = slice_normalize(key, self.shape)
-        start = (key[0].start, key[1].start, key[2].start)
-        end = (key[0].stop, key[1].stop, key[2].stop)
-        step = (key[0].step, key[1].step, key[2].step)
+        shape = slice_shape(key, self.shape)
 
-        if isinstance(val, numbers.Number):
-            arr = np.zeros((
-                (end[0] - start[0]) // step[0],
-                (end[1] - start[1]) // step[1],
-                (end[2] - start[2]) // step[2]
-            ), dtype=self.dtype)
-            arr.fill(val)
+        if np.product(shape) == 0:
+            return
 
-            val = arr
+        if np.shape(val) != shape:
+            # enable broadcasting, e.g. a single value
+            val = np.broadcast_to(val, shape)
 
+        start = tuple(k.start for k in key)
+        step = tuple(k.step for k in key)
         return self.set(start, val, step)
 
     def crop_chunks(self, crop=((0, 0), (0, 0), (0, 0))):
