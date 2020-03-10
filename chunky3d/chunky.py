@@ -1,20 +1,17 @@
-import numbers
+import platform
+import zlib
 
+from numba import jit, njit, prange
+import dill
 import msgpack
 import msgpack_numpy as m
 import numpy as np
-import scipy
+import psutil
 import scipy.ndimage
-import zlib
-from numba import jit, njit, prange
 
 from .chunk import Chunk
-from .helpers import pad_to_chunk, slice_normalize, slice_shape, check_start_end
+from .helpers import slice_normalize, slice_shape, check_start_end
 from .multiprocesses import ProcessPool
-
-import platform
-import dill
-import psutil
 
 
 @njit
