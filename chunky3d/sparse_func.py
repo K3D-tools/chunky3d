@@ -21,11 +21,7 @@ connected_compontent_filter = sitk.ConnectedComponentImageFilter()
 
 
 def min_dtype(t):
-    try:
-        t = t.type
-    except:
-        pass
-
+    """Get the minimum value for the given dtype."""
     if issubclass(t, np.inexact):
         return np.finfo(t).min
     else:
@@ -33,11 +29,7 @@ def min_dtype(t):
 
 
 def max_dtype(t):
-    try:
-        t = t.type
-    except:
-        pass
-
+    """Get the maximum value for the given dtype."""
     if issubclass(t, np.inexact):
         return np.finfo(t).max
     else:
