@@ -7,7 +7,6 @@ import itk
 import networkx as nx
 import numpy as np
 import vtk
-from vtk.util.numpy_support import numpy_to_vtk
 
 from .helpers import slice_normalize
 from .chunky import Sparse
@@ -343,7 +342,7 @@ def label(sparse, multiprocesses=1, fully_connected=False):
 
     if sparse.dtype != np.uint32:
         warnings.warn('label in most cases require uint32 data to work properly')
-        
+
     connected_compontent_filter.SetFullyConnected(fully_connected)
 
     G = nx.Graph()

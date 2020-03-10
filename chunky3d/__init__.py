@@ -1,3 +1,8 @@
+__all__ = [
+    'Sparse',
+    'point_probe',
+    'Chunky',
+]
 
 from .chunky import (
     Sparse,
@@ -5,6 +10,4 @@ from .chunky import (
 )
 
 # compatibility aliases:
-
 Chunky = Sparse
-from . import sparse_func as chunky_func
