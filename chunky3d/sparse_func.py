@@ -404,7 +404,7 @@ def label(sparse, multiprocesses=1, fully_connected=False):
     for idx, k in enumerate(set(range(1, component_sum + 1)) - val_map.keys()):
         val_map[k] = idx + len(cutted_G) + 1
 
-    add_scalar(sparse, component_sum)
+    add_scalar(sparse, component_sum + 1)
     component_index = 1
 
     for k, component_count in zip(sorted(sparse._grid.keys()), component_count_per_chunk):
@@ -412,11 +412,11 @@ def label(sparse, multiprocesses=1, fully_connected=False):
 
         for _ in range(component_count):
             if component_index in val_map:
-                chunk[chunk == (component_index + component_sum)] = val_map[component_index]
+                chunk[chunk == (component_index + component_sum + 1)] = val_map[component_index]
 
             component_index += 1
 
-        chunk[chunk >= component_sum] -= component_sum
+        chunk[chunk > component_sum] -= component_sum + 1
 
         sparse.set_chunk(k, chunk)
 
