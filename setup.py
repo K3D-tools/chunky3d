@@ -26,6 +26,15 @@ setup(
     version=version(here, 'chunky3d', '_version.py'),
     license='MIT',
     install_requires=requirements(),
+    extras_require={
+        'all': [
+            'itk',
+            'itk-thickness3d',
+            'networkx',
+            'SimpleITK',
+            'vtk',
+        ]
+    },
     packages=find_packages(),
     keywords=['3d', 'array', 'chunked', 'sparse'],
     classifiers=[
@@ -39,8 +48,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        # currently missing deps
-        # 'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.8',
     ]
     , project_urls={
         'Source': 'https://github.com/K3D-tools/chunky3d',
