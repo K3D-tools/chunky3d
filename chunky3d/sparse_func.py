@@ -2,22 +2,10 @@ import math
 import warnings
 from collections import Counter
 
-import SimpleITK as sitk
-import itk
-import networkx as nx
 import numpy as np
-import vtk
 
 from .helpers import slice_normalize
 from .chunky import Sparse
-from .vtk_utils import add_np_to_vti
-from .geometry.extract import triangles
-
-dilate_filter = sitk.BinaryDilateImageFilter()
-erode_filter = sitk.BinaryErodeImageFilter()
-closing_filter = sitk.BinaryMorphologicalClosingImageFilter()
-opening_filter = sitk.BinaryMorphologicalOpeningImageFilter()
-connected_compontent_filter = sitk.ConnectedComponentImageFilter()
 
 
 def min_dtype(t):
@@ -231,7 +219,15 @@ def add_scalar(sparse_a, val, multiprocesses=1):
 
 
 def dilate(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
-    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm """
+    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
+
+    This function requires: SimpleITK"""
+    try:
+        import SimpleITK as sitk
+    except ImportError as e:
+        raise ImportError('Please install SimpleITK to use this function.') from e
+
+    dilate_filter = sitk.BinaryDilateImageFilter()
     dilate_filter.SetKernelRadius(kernel_radius)
     dilate_filter.SetForegroundValue(foreground_value)
     sparse.run(lambda data, prev:
@@ -243,7 +239,15 @@ def dilate(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
 
 
 def erode(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
-    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm """
+    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
+
+    This function requires: SimpleITK"""
+    try:
+        import SimpleITK as sitk
+    except ImportError as e:
+        raise ImportError('Please install SimpleITK to use this function.') from e
+
+    erode_filter = sitk.BinaryErodeImageFilter()
     erode_filter.SetKernelRadius(kernel_radius)
     erode_filter.SetForegroundValue(foreground_value)
     sparse.run(lambda data, prev:
@@ -255,7 +259,15 @@ def erode(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
 
 
 def closing(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
-    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm """
+    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
+
+    This function requires: SimpleITK"""
+    try:
+        import SimpleITK as sitk
+    except ImportError as e:
+        raise ImportError('Please install SimpleITK to use this function.') from e
+
+    closing_filter = sitk.BinaryMorphologicalClosingImageFilter()
     closing_filter.SetKernelRadius(kernel_radius)
     closing_filter.SetForegroundValue(foreground_value)
     sparse.run(lambda data, prev:
@@ -267,7 +279,15 @@ def closing(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
 
 
 def opening(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
-    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm """
+    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
+
+    This function requires: SimpleITK"""
+    try:
+        import SimpleITK as sitk
+    except ImportError as e:
+        raise ImportError('Please install SimpleITK to use this function.') from e
+
+    opening_filter = sitk.BinaryMorphologicalOpeningImageFilter()
     opening_filter.SetKernelRadius(kernel_radius)
     opening_filter.SetForegroundValue(foreground_value)
     sparse.run(lambda data, prev: (sitk.GetArrayFromImage(
@@ -278,9 +298,14 @@ def opening(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
 
 
 def thinning(sparse, envelope, multiprocesses=1):
-    """
-    1 pixel-thin wire skeletonization
-    """
+    """1 pixel-thin wire skeletonization
+
+    This function requires: ITK"""
+    try:
+        import itk
+    except ImportError as e:
+        raise ImportError('Please install ITK to use this function.') from e
+
     sparse.run(lambda data, prev: (itk.GetArrayFromImage(
         itk.BinaryThinningImageFilter3D.New(
             itk.GetImageFromArray(data)
@@ -289,10 +314,15 @@ def thinning(sparse, envelope, multiprocesses=1):
 
 
 def thinning_diameter(sparse, envelope, multiprocesses=2):
-    """
-    Computes twice the shortest distance to the outter shell along the medial axis of the object
+    """Computes twice the shortest distance to the outer shell along the medial axis of the object
     (i.e. diameter of the local maximal fitting sphere)
-    """
+
+    This function requires: ITK"""
+    try:
+        import itk
+    except ImportError as e:
+        raise ImportError('Please install ITK to use this function.') from e
+
     if multiprocesses == 1:
         warnings.warn(
             'Disabled multiprocessing creates a pool of threads which does not get deallocated. '
@@ -306,6 +336,7 @@ def thinning_diameter(sparse, envelope, multiprocesses=2):
 
 
 def to_indices_value(sparse):
+    """Return non-empty (other than fill_value) elements as [(i, j, k, value), ...] array."""
     coords = []
 
     for k in sparse._grid.keys():
@@ -322,13 +353,32 @@ def to_indices_value(sparse):
 
 
 def label(sparse, multiprocesses=1, fully_connected=False):
-    """
-    Label the objects in a binary image.
-    ConnectedComponentImageFilter labels the objects in a binary image (non-zero pixels are considered to be objects, zero-valued pixels are considered to be background). Each distinct object is assigned a unique label. The final object labels start with 1 and are consecutive.
+    """Label the objects in a binary image.
+
+    ConnectedComponentImageFilter labels the objects in a binary image (non-zero pixels are considered to be objects,
+    zero-valued pixels are considered to be background). Each distinct object is assigned a unique label.
+    The final object labels start with 1 and are consecutive.
+
     :param sparse: Sparse instance
     :param multiprocesses: number of processes
-    :param fully_connected: whether the connected components are defined strictly by face connectivity or by face+edge+vertex connectivity. Set `True` for objects that are 1 pixel wide.
+    :param fully_connected:
+        whether the connected components are defined strictly by face connectivity or by face+edge+vertex connectivity.
+        Set `True` for objects that are 1 pixel wide.
+
+    This function requires: NetworkX, SimpleITK
     """
+    try:
+        import networkx as nx
+    except ImportError as e:
+        raise ImportError('Please install NetworkX to use this function.') from e
+
+    try:
+        import SimpleITK as sitk
+    except ImportError as e:
+        raise ImportError('Please install SimpleITK to use this function.') from e
+
+    connected_compontent_filter = sitk.ConnectedComponentImageFilter()
+
     if multiprocesses != 1:
         raise NotImplementedError()
 
@@ -413,9 +463,18 @@ def label(sparse, multiprocesses=1, fully_connected=False):
 
 
 def contour(sparse, values, envelope=(1,1,1), quantize_points_factor=0.0, multiprocesses=1):
-    """
-    Generate isosurface(s) from a Sparse volume
-    """
+    """Generate isosurface(s) from a Sparse volume.
+
+    This function requires: VTK"""
+
+    try:
+        import vtk
+    except ImportError as e:
+        raise ImportError('Please install vtk library to use this function.') from e
+
+    from .vtk_utils import add_np_to_vti
+    from .geometry.extract import triangles
+
     def chunk_contour(data, prev, *args):
         envelope, values = args
 

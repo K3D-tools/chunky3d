@@ -112,7 +112,6 @@ class TestImage(unittest.TestCase):
 
         os.remove('save.msgpack')
 
-
     def test_save_compress(self):
         self.save_load(6)
 
@@ -183,22 +182,22 @@ class TestBroadcasting(unittest.TestCase):
     def test_uniform_value(self):
         s = Sparse(shape=(4, 4, 4))
         s[...] = 3
-        self.assertTrue((s[...] == np.full((4, 4, 4), 3)).all())
+        np.testing.assert_array_equal(s[...], np.full((4, 4, 4), 3))
         s[...] = 9
-        self.assertTrue((s[...] == np.full((4, 4, 4), 9)).all())
+        np.testing.assert_array_equal(s[...], np.full((4, 4, 4), 9))
 
     def test_step_broadcast(self):
         expected = np.zeros((3, 3, 3))
         expected[:2] = [3, 4, 5]
         s = Sparse(shape=(3, 3, 3))
         s[:2] = [3, 4, 5]
-        self.assertTrue((s[...] == expected).all())
+        np.testing.assert_array_equal(s[...], expected)
 
         expected = np.zeros((3, 3, 3))
         expected[::2] = [3, 4, 5]
         s = Sparse(shape=(3, 3, 3))
         s[::2] = [3, 4, 5]
-        self.assertTrue((s[...] == expected).all())
+        np.testing.assert_array_equal(s[...], expected)
 
 
 class TestInterpolation(unittest.TestCase):
