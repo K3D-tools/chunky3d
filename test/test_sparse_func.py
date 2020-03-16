@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 from chunky3d import Sparse, point_probe
-from chunky3d.sparse_func import contour, to_indices_value
+from chunky3d.sparse_func import contour, to_indices_value, unique, label
 
 
 @unittest.skip
@@ -39,6 +39,21 @@ class TestFunctions(unittest.TestCase):
             np.array([[1, 2, 3, 4], [50, 60, 70, 80]]),
             verbose=True,
         )
+
+    def test_unique(self):
+        sp = Sparse(shape=(10, 10, 10))
+        sp[0, 2, 1] = 2
+        sp[4, 3, 5] = 4
+        self.assertSetEqual(unique(sp), {0, 2, 4})
+
+    def test_label(self):
+        s = Sparse((30, 30, 30), dtype=np.uint32)
+        s[2:5, 2:5, 2:5] = 1
+        s[7:9, 7:9, 7:9] = 1
+        s[15:18, 15:18, 15:18] = 1
+        s[25:28, 25:28, 25:28] = 1
+        label(s)
+        self.assertSetEqual(unique(s), set(range(5)))
 
 
 if __name__ == '__main__':
