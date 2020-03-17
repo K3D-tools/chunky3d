@@ -210,12 +210,9 @@ def vti_to_sitk(vti, array):
 # region Some strange functions
 
 
-def probe_vtu(vtu_file='output.vtu', point_data=[[0.050640, 0.027959, 0.05213]], fname=None, shape2d=None,
-              verbose=False):
-    """
-    get values of interpolated from vtu mesh on the set of points (N,3)
-    """
-    vtu = read_vtk(vtu_file)
+def probe_vt(vtX_file, point_data, fname=None, shape2d=None, verbose=False):
+    """get values interpolated from vtu mesh on the set of points (N,3)"""
+    vtX = read_vtk(vtX_file)
 
     points = vtk.vtkPoints()
     for point in point_data:
@@ -225,7 +222,7 @@ def probe_vtu(vtu_file='output.vtu', point_data=[[0.050640, 0.027959, 0.05213]],
     polydata.SetPoints(points)
 
     probe = vtk.vtkProbeFilter()
-    probe.SetSourceData(vtu)
+    probe.SetSourceData(vtX)
     probe.SetInputData(polydata)
     probe.Update()
 
@@ -233,7 +230,7 @@ def probe_vtu(vtu_file='output.vtu', point_data=[[0.050640, 0.027959, 0.05213]],
     # out.GetBounds()
     # to get points: numpy_support.vtk_to_numpy(out.GetPoints().GetData()).shape
     pd = out.GetAttributesAsFieldData(0)
-    log = logging.getLogger(vtu_file)
+    log = logging.getLogger(vtX_file)
     if fname is None:
         # all fields
         output = dict()
@@ -247,7 +244,7 @@ def probe_vtu(vtu_file='output.vtu', point_data=[[0.050640, 0.027959, 0.05213]],
         return output
     else:
         field_numbers = [i for i in range(pd.GetNumberOfArrays()) if pd.GetArrayName(i) == fname]
-        assert (len(field_numbers) == 1)
+        assert len(field_numbers) == 1
         log.debug(("output:", pd.GetArrayName(field_numbers[0])))
         v_interp_on_grid = numpy_support.vtk_to_numpy(pd.GetArray(field_numbers[0]))
         if shape2d:
@@ -255,49 +252,14 @@ def probe_vtu(vtu_file='output.vtu', point_data=[[0.050640, 0.027959, 0.05213]],
         return v_interp_on_grid
 
 
-def probe_vti(vti_file='output.vti', point_data=[[0.050640, 0.027959, 0.05213]], fname=None, shape2d=None,
-              verbose=False):
-    """
-    get values of interpolated from vti file mesh on the set of points (N,3)
-    """
-    vti = read_vtk(vti_file)
+def probe_vtu(vtu_file='output.vtu', point_data=[[0.050640, 0.027959, 0.05213]], *args, **kwargs):
+    """get values interpolated from vtu mesh on the set of points (N,3)"""
+    probe_vt(vtu_file, *args, **kwargs)
 
-    points = vtk.vtkPoints()
-    for point in point_data:
-        points.InsertNextPoint(*point)
 
-    polydata = vtk.vtkPolyData()
-    polydata.SetPoints(points)
-
-    probe = vtk.vtkProbeFilter()
-    probe.SetSourceData(vti)
-    probe.SetInputData(polydata)
-    probe.Update()
-
-    out = probe.GetOutput()
-    # out.GetBounds()
-    # to get points: numpy_support.vtk_to_numpy(out.GetPoints().GetData()).shape
-    pd = out.GetAttributesAsFieldData(0)
-    log = logging.getLogger(vti_file)
-    if fname is None:
-        # all fields
-        output = dict()
-        for i in range(pd.GetNumberOfArrays()):
-            v_interp_on_grid = numpy_support.vtk_to_numpy(pd.GetArray(i))
-            if shape2d:
-                v_interp_on_grid = v_interp_on_grid.reshape(shape2d)
-            log.debug(("appending in output:", pd.GetArrayName(i)))
-            output[pd.GetArrayName(i)] = v_interp_on_grid
-        assert (len(output) > 0)
-        return output
-    else:
-        field_numbers = [i for i in range(pd.GetNumberOfArrays()) if pd.GetArrayName(i) == fname]
-        assert (len(field_numbers) == 1)
-        log.debug(("output:", pd.GetArrayName(field_numbers[0])))
-        v_interp_on_grid = numpy_support.vtk_to_numpy(pd.GetArray(field_numbers[0]))
-        if shape2d:
-            return v_interp_on_grid.reshape(shape2d)
-        return v_interp_on_grid
+def probe_vti(vti_file='output.vti', point_data=[[0.050640, 0.027959, 0.05213]], *args, **kwargs):
+    """get values of interpolated from vti file mesh on the set of points (N,3)"""
+    probe_vt(vti_file, *args, **kwargs)
 
 
 def mod_mesh(du, stlfile='c0006.stl', output_fn='surface.vtp',

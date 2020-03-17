@@ -18,14 +18,13 @@ class TestImage(unittest.TestCase):
         for i in range(shp[0]):
             for j in range(shp[1]):
                 for k in range(shp[2]):
-                    self.assertTrue(np.array_equal(s.get_chunk((i, j, k)), zeros))
+                    np.testing.assert_array_equal(s.get_chunk((i, j, k)), zeros)
 
     def test_set_get(self):
         shp = (10, 10, 10)
         chunk_shape = 32
 
         dims = np.multiply(shp, chunk_shape)
-        print(dims)
 
         s = Sparse(shape=dims, chunks=chunk_shape)
 
@@ -40,10 +39,15 @@ class TestImage(unittest.TestCase):
         for i in range(shp[0]):
             for j in range(shp[1]):
                 for k in range(shp[2]):
-                    self.assertTrue(
-                        np.array_equal(s.get_chunk((i, j, k)), test_data[i * chunk_shape:(i + 1) * chunk_shape,
-                                                               j * chunk_shape:(j + 1) * chunk_shape,
-                                                               k * chunk_shape:(k + 1) * chunk_shape]))
+                    np.testing.assert_array_equal(
+                        s.get_chunk((i, j, k)),
+                        test_data[
+                            i * chunk_shape:(i + 1) * chunk_shape,
+                            j * chunk_shape:(j + 1) * chunk_shape,
+                            k * chunk_shape:(k + 1) * chunk_shape
+                        ]
+                    )
+
 
     def test_getitem(self):
         shp = (234, 231, 128)
@@ -54,7 +58,7 @@ class TestImage(unittest.TestCase):
         w2 = s[-138:-10:2, -223:-39:5, 120:128:1]
         w3 = mga[-138:-10:2, -223:-39:5, 120:128:1]
 
-        self.assertTrue(np.all(np.equal(w2, w3)))
+        np.testing.assert_array_equal(w2, w3)
 
     def test_getitem_simple_vs_slice(self):
         shp = (234, 231, 128)
@@ -85,7 +89,7 @@ class TestImage(unittest.TestCase):
             s_slice[i:i+1, j:j+1, k:k+1] = val
             s_point[i, j, k] = val
 
-        self.assertTrue((s_slice[:, :, :] == s_point[:, :, :]).all())
+        np.testing.assert_array_equal(s_slice[...], s_point[...])
 
     def save_load(self, compression_level):
         shp = (67, 87, 33)
@@ -100,18 +104,21 @@ class TestImage(unittest.TestCase):
             self.assertEqual(k1, k2)
 
             if k1 not in ['_grid', '_memory_blocks']:
+                # fields like 'shape' etc.
                 self.assertEqual(v1, v2)
+                continue
 
             if k1 == '_grid':
                 for (_, d1), (_, d2) in zip(v1.items(), v2.items()):
-                    self.assertTrue(np.all(np.equal(d1, d2)))
+                    np.testing.assert_array_equal(d1, d2)
+                continue
 
             if k1 == '_memory_blocks':
-                for (d1, d2) in zip(v1, v2):
-                    self.assertTrue(np.all(np.equal(d1, d2)))
+                for d1, d2 in zip(v1, v2):
+                    np.testing.assert_array_equal(d1, d2)
+                continue
 
         os.remove('save.msgpack')
-
 
     def test_save_compress(self):
         self.save_load(6)
@@ -183,22 +190,22 @@ class TestBroadcasting(unittest.TestCase):
     def test_uniform_value(self):
         s = Sparse(shape=(4, 4, 4))
         s[...] = 3
-        self.assertTrue((s[...] == np.full((4, 4, 4), 3)).all())
+        np.testing.assert_array_equal(s[...], np.full((4, 4, 4), 3))
         s[...] = 9
-        self.assertTrue((s[...] == np.full((4, 4, 4), 9)).all())
+        np.testing.assert_array_equal(s[...], np.full((4, 4, 4), 9))
 
     def test_step_broadcast(self):
         expected = np.zeros((3, 3, 3))
         expected[:2] = [3, 4, 5]
         s = Sparse(shape=(3, 3, 3))
         s[:2] = [3, 4, 5]
-        self.assertTrue((s[...] == expected).all())
+        np.testing.assert_array_equal(s[...], expected)
 
         expected = np.zeros((3, 3, 3))
         expected[::2] = [3, 4, 5]
         s = Sparse(shape=(3, 3, 3))
         s[::2] = [3, 4, 5]
-        self.assertTrue((s[...] == expected).all())
+        np.testing.assert_array_equal(s[...], expected)
 
 
 class TestInterpolation(unittest.TestCase):

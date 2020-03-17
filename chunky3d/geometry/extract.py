@@ -1,15 +1,14 @@
 import vtk
 
 def _extract(polydata, celltypes):
-    
     ids = vtk.vtkIdTypeArray()
     ids.SetNumberOfComponents(1)
 
-    unique_points = []
     for i in range(polydata.GetNumberOfCells()):
         c = polydata.GetCell(i)
         if c.GetCellType() in celltypes:
             ids.InsertNextValue(i)
+
     sn = vtk.vtkSelectionNode()
     sn.SetFieldType(vtk.vtkSelectionNode.CELL)
     sn.SetContentType(vtk.vtkSelectionNode.INDICES)
@@ -32,4 +31,3 @@ def triangles(polydata):
     gf = _extract(polydata, celltypes=[vtk.VTK_TRIANGLE,])
     gf.Update()
     return gf.GetOutput()
-
