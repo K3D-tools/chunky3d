@@ -36,7 +36,7 @@ class TestFunctions(unittest.TestCase):
         result.sort(axis=0)
         np.testing.assert_array_equal(
             result,
-            np.array([[1, 2, 3, 4], [50, 60, 70, 80]]),
+            [[1, 2, 3, 4], [50, 60, 70, 80]],
             verbose=True,
         )
 
