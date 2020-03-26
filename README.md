@@ -43,6 +43,8 @@ array([[0., 0.],
   morphological operations (opening, closing), thinning, connected components
 * Fast load and save using `msgpack`
 * Operations on arrays using `.run()`, with possible acceleration using `multiprocessing`
+* `multiprocessing`-based acceleration in most of existing `sparse_func`
 * Accelerated lookup using `numba`
 * Interpolation (point probe)
 * Origin and spacing: representing 3D space with non-uniform spacing for different axes
+* Easy visualization of arrays with `dtype=np.uint8` via `chunky3d.k3d_connector.get_k3d_object()`
