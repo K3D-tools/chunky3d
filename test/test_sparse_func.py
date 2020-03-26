@@ -3,11 +3,16 @@ import unittest
 
 import numpy as np
 
-from chunky3d import Sparse, point_probe
-from chunky3d.sparse_func import contour, to_indices_value, unique, label
+from chunky3d import Sparse
+from chunky3d.sparse_func import (
+    contour,
+    label,
+    thinning,
+    to_indices_value,
+    unique,
+)
 
 
-@unittest.skip
 class TestContour(unittest.TestCase):
     def test_contour(self):
         shape = (100, 100, 100)
@@ -54,6 +59,24 @@ class TestFunctions(unittest.TestCase):
         s[25:28, 25:28, 25:28] = 1
         label(s)
         self.assertSetEqual(unique(s), set(range(5)))
+
+    def test_thinning(self):
+        s = Sparse((5, 5, 5), dtype=np.uint16)
+        s[...] = 1
+        s[2, 2] = 0
+        expected_slice = np.array([
+            [0, 0, 1, 0, 0],
+            [0, 1, 0, 1, 0],
+            [0, 1, 0, 0, 1],
+            [0, 0, 1, 1, 0],
+            [0, 0, 0, 0, 0],
+        ], dtype=np.uint8)
+        ss = {1: s, 2: s.copy()}
+        for mp in (1, 2):
+            with self.subTest(multiprocess=mp):
+                ss = s.copy()
+                thinning(ss, (0, 0, 0))
+                np.testing.assert_array_equal(ss[..., 2], expected_slice)
 
 
 if __name__ == '__main__':
