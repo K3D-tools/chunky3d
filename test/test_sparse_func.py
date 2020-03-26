@@ -73,9 +73,9 @@ class TestFunctions(unittest.TestCase):
         ], dtype=np.uint8)
         ss = {1: s, 2: s.copy()}
         for mp in (1, 2):
-            with self.subTest(multiprocess=mp):
+            with self.subTest(multiprocesses=mp):
                 ss = s.copy()
-                thinning(ss, (0, 0, 0))
+                thinning(ss, (0, 0, 0), multiprocesses=mp)
                 np.testing.assert_array_equal(ss[..., 2], expected_slice)
 
 
