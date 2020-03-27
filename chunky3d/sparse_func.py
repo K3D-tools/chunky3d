@@ -7,6 +7,13 @@ import numpy as np
 from .helpers import slice_normalize
 from .chunky import Sparse
 
+# optional imports
+try:
+    import itk
+    _have_itk = True
+except ImportError:
+    _have_itk = False
+
 
 def min_dtype(t):
     """Get the minimum value for the given dtype."""
@@ -301,10 +308,8 @@ def thinning(sparse, envelope, multiprocesses=1):
     """1 pixel-thin wire skeletonization
 
     This function requires: ITK"""
-    try:
-        import itk
-    except ImportError as e:
-        raise ImportError('Please install ITK to use this function.') from e
+    if not _have_itk:
+        raise ImportError('Please install ITK to use this function.')
 
     sparse.run(lambda data, prev: (itk.GetArrayFromImage(
         itk.BinaryThinningImageFilter3D.New(
@@ -318,16 +323,15 @@ def thinning_diameter(sparse, envelope, multiprocesses=2):
     (i.e. diameter of the local maximal fitting sphere)
 
     This function requires: ITK"""
-    try:
-        import itk
-    except ImportError as e:
-        raise ImportError('Please install ITK to use this function.') from e
+    if not _have_itk:
+        raise ImportError('Please install ITK to use this function.')
 
     if multiprocesses == 1:
         warnings.warn(
             'Disabled multiprocessing creates a pool of threads which does not get deallocated. '
             'Subsequent calls with multiprocessing **enabled** will be locked indefinitely.'
         )
+
     sparse.run(lambda data, prev: (itk.GetArrayFromImage(
         itk.MedialThicknessImageFilter3D.New(
             itk.GetImageFromArray(data)
