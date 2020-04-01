@@ -295,19 +295,24 @@ class Sparse:
 
     @property
     def shape(self):
-        """ A tuple of integers describing the length of each dimension of the array. """
+        """A tuple of integers describing the length of each dimension of the array."""
         return self._shape
 
     @shape.setter
     def shape(self, val):
         if isinstance(val, int):
-            self._shape = tuple([val] * 3)
+            val = tuple([val] * 3)
         elif isinstance(val, np.ndarray) and len(val) == 3:
-            self._shape = tuple(val)
+            val = tuple(val.astype(np.int))
         elif isinstance(val, tuple) and len(val) == 3:
-            self._shape = val
+            val = tuple(np.array(val, dtype=np.int))
         else:
-            raise Exception("Structure shape error!")
+            raise ValueError('invalid shape specified')
+
+        if any(d <= 0 for d in val):
+            raise ValueError('all dimensions of shape must be positive')
+
+        self._shape = val
 
     @property
     def size(self):

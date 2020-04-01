@@ -1,5 +1,7 @@
 import unittest
 
+import numpy as np
+
 from chunky3d.helpers import slice_normalize, slice_shape
 
 
@@ -72,6 +74,12 @@ class TestSliceNormalize(SliceHelper):
         self.assertEqual(
             slice_normalize(self[::-1], (3, 3, 3)),
             (slice(2, -1, -1), slice(0, 3, 1), slice(0, 3, 1)),
+        )
+
+    def test_unsigned_shape(self):
+        self.assertEqual(
+            slice_normalize(self[1], tuple(np.array([2, 3, 4], dtype=np.uint16))),
+            (slice(1, 2, 1), slice(0, 3, 1), slice(0, 4, 1)),
         )
 
 
