@@ -253,5 +253,19 @@ class TestInterpolation(unittest.TestCase):
         self.assertEqual(point_probe(np.full(3, 2), self.s), 2.0)
 
 
+class TestProperties(unittest.TestCase):
+    def test_unsigned_shape(self):
+        s = Sparse(tuple(np.arange(2, 5, dtype=np.uint8)))
+        print(s.shape)
+        self.assertTrue(
+            np.all(-np.array(s.shape) < 0)  # unsinged would be > 0
+        )
+
+    def test_negative_shape(self):
+        with self.assertRaises(ValueError) as cm:
+            Sparse((10, -2, 10))
+        self.assertTrue(str(cm.exception).startswith('all dimensions of shape must be positive'))
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -42,6 +42,7 @@ def slice_normalize(key, shape):
     :return: tuple of 'normalized' slices
     :raises: IndexError if slice start, stop or step is not an integer"""
 
+    shape = np.asarray(shape, dtype=np.int)
     key = adjust_key(key, shape)
     k = list()
 
