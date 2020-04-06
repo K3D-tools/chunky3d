@@ -130,3 +130,19 @@ def check_start_end(start, end, shape, check_end=True):
     # if |step| is > 1, testing the end is not as simple
     if check_end and (end > np.array(shape)).any():
         raise IndexError(f"end index {end} out of range {shape}.")
+
+
+def min_dtype(t):
+    """Get the minimum value for the given dtype."""
+    if issubclass(t, np.inexact):
+        return np.finfo(t).min
+    else:
+        return np.iinfo(t).min
+
+
+def max_dtype(t):
+    """Get the maximum value for the given dtype."""
+    if issubclass(t, np.inexact):
+        return np.finfo(t).max
+    else:
+        return np.iinfo(t).max

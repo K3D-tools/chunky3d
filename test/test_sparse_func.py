@@ -10,9 +10,15 @@ from chunky3d.sparse_func import (
     thinning,
     to_indices_value,
     unique,
+    _have_itk,
+    _have_itk_thickness,
+    _have_nx,
+    _have_sitk,
+    _have_vtk,
 )
 
 
+@unittest.skipUnless(_have_vtk, 'this test needs VTK')
 class TestContour(unittest.TestCase):
     def test_contour(self):
         shape = (100, 100, 100)
@@ -51,6 +57,7 @@ class TestFunctions(unittest.TestCase):
         sp[4, 3, 5] = 4
         self.assertSetEqual(unique(sp), {0, 2, 4})
 
+    @unittest.skipUnless(_have_sitk and _have_nx, 'this test needs SimpleITK and NetworkX')
     def test_label(self):
         s = Sparse((30, 30, 30), dtype=np.uint32)
         s[2:5, 2:5, 2:5] = 1
@@ -60,6 +67,7 @@ class TestFunctions(unittest.TestCase):
         label(s)
         self.assertSetEqual(unique(s), set(range(5)))
 
+    @unittest.skipUnless(_have_itk and _have_itk_thickness, 'this test needs ITK and itk-thickness3d')
     def test_thinning(self):
         s = Sparse((5, 5, 5), dtype=np.uint16)
         s[...] = 1
