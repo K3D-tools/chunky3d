@@ -1,5 +1,6 @@
-import os.path
 import logging
+import os
+import warnings
 
 import vtk
 from vtk.util import numpy_support
@@ -85,7 +86,13 @@ def _save(input_data, path, writer_type):
 
 
 def add_np_to_vti(vti, arr_np, arr_name, arr_type=None):
-    arr = numpy_support.numpy_to_vtk(num_array=arr_np.ravel(), deep=True, array_type=arr_type)
+    with warnings.catch_warnings():
+        # FutureWarning:
+        # Conversion of the second argument of issubdtype from `complex` to `np.complexfloating` is deprecated.
+        # In future, it will be treated as `np.complex128 == np.dtype(complex).type`.
+        warnings.simplefilter('ignore')
+        arr = numpy_support.numpy_to_vtk(num_array=arr_np.ravel(), deep=True, array_type=arr_type)
+
     arr.SetName(arr_name)
     vti.GetPointData().AddArray(arr)
 

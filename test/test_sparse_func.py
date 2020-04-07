@@ -6,6 +6,7 @@ import numpy as np
 from chunky3d import Sparse
 from chunky3d.sparse_func import (
     contour,
+    dilate,
     label,
     thinning,
     to_indices_value,
@@ -16,6 +17,7 @@ from chunky3d.sparse_func import (
     _have_sitk,
     _have_vtk,
 )
+import chunky3d.sparse_func as sf
 
 
 @unittest.skipUnless(_have_vtk, 'this test needs VTK')
@@ -66,6 +68,29 @@ class TestFunctions(unittest.TestCase):
         s[25:28, 25:28, 25:28] = 1
         label(s)
         self.assertSetEqual(unique(s), set(range(5)))
+
+    @unittest.skipUnless(_have_sitk, 'this test needs SimpleITK')
+    def test_dilate(self):
+        s = Sparse((15, 15, 15), dtype=np.uint8)
+        s[3, 3, 3] = 1
+        dilate(s, [1])  # also: dilate(s, 1) and dilate(s, (1, 1, 1))
+        expected = np.array([
+            # as you see, corners are still empty, because this is
+            # itk::BinaryBallStructuringElement (a ball kernel)
+           [[0, 1, 0],
+            [1, 1, 1],
+            [0, 1, 0]],
+
+           [[1, 1, 1],
+            [1, 1, 1],
+            [1, 1, 1]],
+
+           [[0, 1, 0],
+            [1, 1, 1],
+            [0, 1, 0]]
+        ], dtype=np.uint8)
+        np.testing.assert_array_equal(s[2:5, 2:5, 2:5], expected)
+        self.assertEqual(sf.sum(s), 3**3 - 8)
 
     @unittest.skipUnless(_have_itk and _have_itk_thickness, 'this test needs ITK and itk-thickness3d')
     def test_thinning(self):

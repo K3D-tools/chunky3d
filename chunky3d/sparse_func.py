@@ -234,10 +234,14 @@ def dilate(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
     """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
 
     This function requires: SimpleITK"""
-    try:
-        import SimpleITK as sitk
-    except ImportError as e:
-        raise ImportError('Please install SimpleITK to use this function.') from e
+    if not _have_sitk:
+        raise ImportError('Please install SimpleITK to use this function.')
+
+    if isinstance(kernel_radius, int):
+        kernel_radius = (kernel_radius,) * 3
+
+    if len(kernel_radius) == 1:
+        kernel_radius = tuple([x for x in kernel_radius] * 3)
 
     dilate_filter = sitk.BinaryDilateImageFilter()
     dilate_filter.SetKernelRadius(kernel_radius)
