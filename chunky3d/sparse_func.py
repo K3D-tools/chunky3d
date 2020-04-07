@@ -4,31 +4,36 @@ from collections import Counter
 
 import numpy as np
 
-from .helpers import slice_normalize
+from .helpers import slice_normalize, min_dtype, max_dtype
 from .chunky import Sparse
 
 # optional imports
+
 try:
     import itk
     _have_itk = True
+    _have_itk_thickness = hasattr(itk, 'BinaryThinningImageFilter3D')
 except ImportError:
     _have_itk = False
+    _have_itk_thickness = False
 
+try:
+    import networkx as nx
+    _have_nx = True
+except ImportError:
+    _have_nx = False
 
-def min_dtype(t):
-    """Get the minimum value for the given dtype."""
-    if issubclass(t, np.inexact):
-        return np.finfo(t).min
-    else:
-        return np.iinfo(t).min
+try:
+    import SimpleITK as sitk
+    _have_sitk = True
+except ImportError:
+    _have_sitk = False
 
-
-def max_dtype(t):
-    """Get the maximum value for the given dtype."""
-    if issubclass(t, np.inexact):
-        return np.finfo(t).max
-    else:
-        return np.iinfo(t).max
+try:
+    import vtk
+    _have_vtk = True
+except ImportError:
+    _have_vtk = False
 
 
 def _unique_pairs(a):
@@ -229,10 +234,14 @@ def dilate(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
     """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
 
     This function requires: SimpleITK"""
-    try:
-        import SimpleITK as sitk
-    except ImportError as e:
-        raise ImportError('Please install SimpleITK to use this function.') from e
+    if not _have_sitk:
+        raise ImportError('Please install SimpleITK to use this function.')
+
+    if isinstance(kernel_radius, int):
+        kernel_radius = (kernel_radius,) * 3
+
+    if len(kernel_radius) == 1:
+        kernel_radius = tuple([x for x in kernel_radius] * 3)
 
     dilate_filter = sitk.BinaryDilateImageFilter()
     dilate_filter.SetKernelRadius(kernel_radius)
@@ -249,10 +258,8 @@ def erode(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
     """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
 
     This function requires: SimpleITK"""
-    try:
-        import SimpleITK as sitk
-    except ImportError as e:
-        raise ImportError('Please install SimpleITK to use this function.') from e
+    if not _have_sitk:
+        raise ImportError('Please install SimpleITK to use this function.')
 
     erode_filter = sitk.BinaryErodeImageFilter()
     erode_filter.SetKernelRadius(kernel_radius)
@@ -269,10 +276,8 @@ def closing(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
     """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
 
     This function requires: SimpleITK"""
-    try:
-        import SimpleITK as sitk
-    except ImportError as e:
-        raise ImportError('Please install SimpleITK to use this function.') from e
+    if not _have_sitk:
+        raise ImportError('Please install SimpleITK to use this function.')
 
     closing_filter = sitk.BinaryMorphologicalClosingImageFilter()
     closing_filter.SetKernelRadius(kernel_radius)
@@ -289,10 +294,8 @@ def opening(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
     """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
 
     This function requires: SimpleITK"""
-    try:
-        import SimpleITK as sitk
-    except ImportError as e:
-        raise ImportError('Please install SimpleITK to use this function.') from e
+    if not _have_sitk:
+        raise ImportError('Please install SimpleITK to use this function.')
 
     opening_filter = sitk.BinaryMorphologicalOpeningImageFilter()
     opening_filter.SetKernelRadius(kernel_radius)
@@ -310,6 +313,8 @@ def thinning(sparse, envelope, multiprocesses=1):
     This function requires: ITK"""
     if not _have_itk:
         raise ImportError('Please install ITK to use this function.')
+    if not _have_itk_thickness:
+        raise ImportError('Please install itk-thickness3d to use this function.')
 
     sparse.run(lambda data, prev: (itk.GetArrayFromImage(
         itk.BinaryThinningImageFilter3D.New(
@@ -325,6 +330,8 @@ def thinning_diameter(sparse, envelope, multiprocesses=2):
     This function requires: ITK"""
     if not _have_itk:
         raise ImportError('Please install ITK to use this function.')
+    if not _have_itk_thickness:
+        raise ImportError('Please install itk-thickness3d to use this function.')
 
     if multiprocesses == 1:
         warnings.warn(
@@ -371,15 +378,10 @@ def label(sparse, multiprocesses=1, fully_connected=False):
 
     This function requires: NetworkX, SimpleITK
     """
-    try:
-        import networkx as nx
-    except ImportError as e:
-        raise ImportError('Please install NetworkX to use this function.') from e
-
-    try:
-        import SimpleITK as sitk
-    except ImportError as e:
-        raise ImportError('Please install SimpleITK to use this function.') from e
+    if not _have_nx:
+        raise ImportError('Please install NetworkX to use this function.')
+    if not _have_sitk:
+        raise ImportError('Please install SimpleITK to use this function.')
 
     connected_compontent_filter = sitk.ConnectedComponentImageFilter()
 
@@ -470,11 +472,8 @@ def contour(sparse, values, envelope=(1,1,1), quantize_points_factor=0.0, multip
     """Generate isosurface(s) from a Sparse volume.
 
     This function requires: VTK"""
-
-    try:
-        import vtk
-    except ImportError as e:
-        raise ImportError('Please install vtk library to use this function.') from e
+    if not _have_vtk:
+        raise ImportError('Please install vtk library to use this function.')
 
     from .vtk_utils import add_np_to_vti
     from .geometry.extract import triangles
