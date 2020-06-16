@@ -552,9 +552,13 @@ class Sparse:
         prev = kwargs.get('prev')
 
         to_update = {}
+
         for k in keys:
             if envelope == (0, 0, 0):
                 ret, prev = func(self.get_chunk(tuple(k)), prev, *args)
+                if ret is None:
+                    # read-only func
+                    continue
                 to_update[tuple(k)] = ret
             else:
                 s = self._chunk_to_global_coord(k, (-envelope[0], - envelope[1], -envelope[2]))
@@ -582,6 +586,9 @@ class Sparse:
                 chunk.origin = self.origin + s[::-1] * self.spacing
 
                 ret, prev = func(chunk, prev, *args)
+                if ret is None:
+                    # read-only func
+                    continue
 
                 to_update[tuple(k)] = ret[envelope[0]:-envelope[0],
                                       envelope[1]:-envelope[1],
@@ -647,6 +654,7 @@ class Sparse:
             `args` is a non-keyworded variable length argument list.
             Function has to return two elements:
             `data_out` is a (possibly modified) ndarray from `data_in` which is to be inserted in-place into Sparse,
+                       or `None` if nothing should be modified in the Sparse,
             `prev_out` is a (possibly modified) `prev_in` accumulator.
         :param args: non-keyworded variable length argument list which will be passed to every `func` call.
         :param envelope: 3-element tuple for extra margin on each direction in each axis on the `data_in` Chunk.
@@ -676,6 +684,7 @@ class Sparse:
                                                       skip_neighbours=skip_neighbours)
         for k in to_update.keys():
             self.set_chunk(k, to_update[k])
+
         return prev
 
     def raw_run(self, func, start, end, prev=None, step=(1, 1, 1), *args):

@@ -48,9 +48,9 @@ def unique(sparse, return_counts=False, multiprocesses=1):
             values, counts = np.unique(data, return_counts=True)
             x = dict(zip(values, counts))
 
-            return data, dict(Counter(x) + Counter(prev))
+            return None, dict(Counter(x) + Counter(prev))
         else:
-            return data, prev | set(np.unique(data))
+            return None, prev | set(np.unique(data))
 
     result = sparse.run(process, prev={} if return_counts else set(), multiprocesses=multiprocesses)
 
@@ -85,11 +85,12 @@ def downscale(sparse, stride=(2, 2, 2)):
 
 
 def sum(sparse, multiprocesses=1):
-    return np.sum(sparse.run(lambda data, prev: (data, prev + np.sum(data)), prev=0, multiprocesses=multiprocesses))
+    return np.sum(sparse.run(lambda data, prev: (None, prev + np.sum(data)), prev=0, multiprocesses=multiprocesses))
 
 
 def downsample(sparse, stride=(3, 3, 3)):
     sparse_copy = Sparse.empty_like(sparse, chunks=np.array(stride) * 16)
+    # TODO: is this copy made because of issue #16?
     sparse_copy.copy_from(sparse)
 
     sparse_downscaled = Sparse(np.array(sparse.shape) // np.array(stride), dtype=np.float32)
@@ -110,6 +111,7 @@ def downsample(sparse, stride=(3, 3, 3)):
         coord[1]:coord[1] + 16,
         coord[2]:coord[2] + 16] = accu / (stride[0] * stride[1] * stride[2])
 
+        # TODO: should it return (None, prev) after issue #16 ?
         return chunk, prev
 
     return sparse_copy.run(reduce, (0, 0, 0), sparse_downscaled)
@@ -157,7 +159,7 @@ def where(sparse, func):
 def max(sparse, multiprocesses=1):
     f = np.max
     return f(sparse.run(
-                        lambda data, prev: (data, f([prev, f(data)])),
+                        lambda data, prev: (None, f([prev, f(data)])),
                         prev=min_dtype(sparse.dtype),
                         multiprocesses=multiprocesses,
                         )
@@ -167,7 +169,7 @@ def max(sparse, multiprocesses=1):
 def nanmax(sparse, multiprocesses=1):
     f = np.nanmax
     return f(sparse.run(
-                        lambda data, prev: (data, f([prev, f(data)])),
+                        lambda data, prev: (None, f([prev, f(data)])),
                         prev=min_dtype(sparse.dtype),
                         multiprocesses=multiprocesses,
                         )
@@ -187,7 +189,7 @@ def max_slice(sparse, z, y, x):
 def min(sparse, multiprocesses=1):
     f = np.min
     return f(sparse.run(
-                        lambda data, prev: (data, f([prev, f(data)])),
+                        lambda data, prev: (None, f([prev, f(data)])),
                         prev=max_dtype(sparse.dtype),
                         multiprocesses=multiprocesses,
                         )
@@ -197,7 +199,7 @@ def min(sparse, multiprocesses=1):
 def nanmin(sparse, multiprocesses=1):
     f = np.nanmin
     return f(sparse.run(
-                        lambda data, prev: (data, f([prev, f(data)])),
+                        lambda data, prev: (None, f([prev, f(data)])),
                         prev=max_dtype(sparse.dtype),
                         multiprocesses=multiprocesses,
                         )
@@ -502,6 +504,7 @@ def contour(sparse, values, envelope=(1,1,1), quantize_points_factor=0.0, multip
         writer.Update()
         prev.append(writer.GetOutputString())
 
+        # TODO: could this return (None, prev) after issue #16 ?
         return data, prev
 
     out = sparse.run(chunk_contour,
