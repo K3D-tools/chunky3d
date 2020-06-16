@@ -53,6 +53,33 @@ class TestFunctions(unittest.TestCase):
             verbose=True,
         )
 
+    def test_sum(self):
+        sp = Sparse(shape=(10, 10, 10))
+        sp[0, 2, 1] = 2
+        sp[4, 3, 5] = 4
+        self.assertEqual(sf.sum(sp), 6)
+
+    def test_max(self):
+        sp = Sparse(shape=(10, 10, 10))
+        sp[0, 2, 1] = 2
+        sp[4, 3, 5] = 4
+        self.assertEqual(sf.max(sp), 4)
+        sp[4, 4, 3] = np.nan
+        self.assertTrue(np.isnan(sf.max(sp)))
+        self.assertEqual(sf.nanmax(sp), 4)
+
+    def test_min(self):
+        sp = Sparse(shape=(10, 10, 10))
+        sp[0, 2, 1] = 2
+        sp[4, 3, 5] = 4
+        self.assertEqual(sf.min(sp), 0)
+        sp[0, 2, 2] = -2
+        sp[4, 3, 3] = -4
+        self.assertEqual(sf.min(sp), -4)
+        sp[4, 4, 3] = np.nan
+        self.assertTrue(np.isnan(sf.min(sp)))
+        self.assertEqual(sf.nanmin(sp), -4)
+
     def test_unique(self):
         sp = Sparse(shape=(10, 10, 10))
         sp[0, 2, 1] = 2
