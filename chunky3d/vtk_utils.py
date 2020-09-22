@@ -274,7 +274,12 @@ def mod_mesh(du, stlfile='c0006.stl', output_fn='surface.vtp',
     """
     Move stl in normal direction
     """
-    stl = read_vtk(stlfile)
+
+    if type(stlfile) is str:
+        stl = read_vtk(stlfile)
+    else:
+        stl = stlfile
+
     vertices = numpy_support.vtk_to_numpy(stl.GetPoints().GetData())
     # indices = numpy_support.vtk_to_numpy(stl.GetPolys().GetData()).reshape(-1, 4)[:, 1:4]
 
@@ -309,7 +314,12 @@ def probe_at_dx(du=0.001, velocity_file=None, stlfile='c0006.stl', output_fn='su
     """
     Equidistant points from stl in normal direction
     """
-    stl = read_vtk(stlfile)
+
+    if type(stlfile) is str:
+        stl = read_vtk(stlfile)
+    else:
+        stl = stlfile
+
     vertices = numpy_support.vtk_to_numpy(stl.GetPoints().GetData())
     # indices = numpy_support.vtk_to_numpy(stl.GetPolys().GetData()).reshape(-1, 4)[:, 1:4]
     merged = vtk.vtkPolyData()
