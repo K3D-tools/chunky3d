@@ -4,6 +4,7 @@ import warnings
 
 import vtk
 from vtk.util import numpy_support
+
 import numpy as np
 
 logging.debug(("VTK version:", vtk.VTK_VERSION))
@@ -307,6 +308,38 @@ def mod_mesh(du, stlfile='c0006.stl', output_fn='surface.vtp',
 
     return merged
 
+def xyz_at_dx(du = 0.001, stlfile='c0006.stl', sign=1):
+    '''
+    Returns equidistant points from stl in normal direction
+    '''
+    
+    if type(stlfile) is str:
+        stl = read_vtk(stlfile)
+    else:
+        stl = stlfile
+    #stl = stlImageActor(stlfile)
+    vertices = numpy_support.vtk_to_numpy(stl.GetPoints().GetData())
+    indices = numpy_support.vtk_to_numpy(stl.GetPolys().GetData()).reshape(-1, 4)[:, 1:4]
+    merged = vtk.vtkPolyData()
+    merged.DeepCopy(stl)
+     
+    # Compute normals to vertices
+    normalGenerator = vtk.vtkPolyDataNormals()
+    normalGenerator.SetInputData(merged)
+    normalGenerator.ComputePointNormalsOn()
+    normalGenerator.ComputeCellNormalsOff()
+    normalGenerator.SetSplitting(0)
+    normalGenerator.SetConsistency(0)
+    normalGenerator.Update()
+
+    merged = normalGenerator.GetOutput()
+    normals = numpy_support.vtk_to_numpy(merged.GetPointData().GetNormals())
+
+    points = []
+    for normal, pos in zip(normals, vertices):
+        points.append( pos + normal * (-sign*du))
+
+    return np.array(points)
 
 def probe_at_dx(du=0.001, velocity_file=None, stlfile='c0006.stl', output_fn='surface.vtp',
                 velocity_name='v [m/s]',
@@ -408,4 +441,56 @@ def scale_and_trans(vtk_data=None, output=None,
     else:
         save_vtu(transformFilter.GetOutput(), output)
 
+
+
+def vtp_from_verts_faces(verts,faces):
+    """ 
+    Make vtp polydata object from vertices and indices/faces
+    """
+
+    poly = vtk.vtkPolyData()
+
+    Points = vtk.vtkPoints()
+    Points.SetData(  numpy_support.numpy_to_vtk(verts.astype(np.float32)) )
+
+    vtk_id_array = numpy_support.numpy_to_vtk(np.pad(faces.astype(np.int64),[(0,0),(1,0)],
+                                       mode='constant',constant_values=3).flatten(),\
+            array_type=vtk.VTK_ID_TYPE)
+
+    vtk_cells = vtk.vtkCellArray()
+    vtk_cells.SetCells(faces.shape[0], vtk_id_array)
+
+    poly.SetPoints(Points)
+    poly.SetPolys(vtk_cells)
+    return poly
+
+
+from scipy.ndimage.filters import gaussian_filter
+from skimage.measure import marching_cubes_lewiner
+
+def marching_cubes_with_smooth(mask, sigma=1.2, level=0.5):
+    """ 
+    Compute isosurface around mask, converts also boundaing box.
+
+    Paramteters
+    -----------
+    mask  : Sparse mask
+    sigma : blur radius (in lattice units)
+    level : isolevel after gaussian blurring (e.g. 0.5 for binary mask)
+
+    Returns
+    ------- 
+    verts, faces  : mesh vertices and triangles.
+    
+    """
+    from .chunky import Sparse
+    
+    origin,spacing = mask.origin, mask.spacing
+    mask_s = Sparse.empty_like(mask, dtype=np.float32)
+    mask_s.copy_from(mask)
+    mask_s.run(lambda d, _: (gaussian_filter(d, sigma), None), envelope=(5,5,5))
+    verts, faces, normals, values = marching_cubes_lewiner(mask_s[:,:,:], 0.5)
+    verts = np.array(origin,dtype=np.float32) + (verts[:,::-1].astype(np.float32)*spacing)
+
+    return verts, faces
 # endregion

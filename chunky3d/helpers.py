@@ -1,6 +1,7 @@
 import numpy as np
 
 
+
 def adjust_key(key, shape):
     """Prepare a slicing tuple (key) for slicing an array of specific shape."""
 
@@ -146,3 +147,24 @@ def max_dtype(t):
         return np.finfo(t).max
     else:
         return np.iinfo(t).max
+
+
+def tighten_box(geo):
+    """Remove empty space from bounding box in sparse"""
+
+    from .chunky import Sparse 
+    nonempty_chunks = {idx:c for idx,c in geo._grid.items()   if not np.all(c==geo.fill_value)}
+ 
+    origins = np.array([c.origin for idx,c in nonempty_chunks.items()])
+    idxs = np.array([idx for idx,c in nonempty_chunks.items()])
+    
+    geo_tight  = Sparse((1+np.max(idxs,axis=0)-np.min(idxs,axis=0))*np.array(geo.chunks),
+                       chunks = geo.chunks,
+                       dtype = geo.dtype,
+                       origin = np.min(origins,axis=0),
+                       spacing = geo.spacing) 
+    for idx,c in nonempty_chunks.items():
+        idx_from_zero = tuple(np.array(idx) - np.min(idxs,axis=0))
+        geo_tight.set_chunk(idx_from_zero,c)
+    
+    return geo_tight
