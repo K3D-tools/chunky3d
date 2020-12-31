@@ -1,7 +1,7 @@
 __all__ = [
-    'Sparse',
-    'point_probe',
-    'Chunky',
+    "Sparse",
+    "point_probe",
+    "Chunky",
 ]
 
 from .chunky import (

@@ -11,26 +11,30 @@ from .chunky import Sparse
 
 try:
     import itk
+
     _have_itk = True
-    _have_itk_thickness = hasattr(itk, 'BinaryThinningImageFilter3D')
+    _have_itk_thickness = hasattr(itk, "BinaryThinningImageFilter3D")
 except ImportError:
     _have_itk = False
     _have_itk_thickness = False
 
 try:
     import networkx as nx
+
     _have_nx = True
 except ImportError:
     _have_nx = False
 
 try:
     import SimpleITK as sitk
+
     _have_sitk = True
 except ImportError:
     _have_sitk = False
 
 try:
     import vtk
+
     _have_vtk = True
 except ImportError:
     _have_vtk = False
@@ -43,6 +47,7 @@ def _unique_pairs(a):
 
 def unique(sparse, return_counts=False, multiprocesses=1):
     """ see: https://docs.scipy.org/doc/numpy/reference/generated/numpy.unique.html """
+
     def process(data, prev):
         if return_counts:
             values, counts = np.unique(data, return_counts=True)
@@ -52,7 +57,9 @@ def unique(sparse, return_counts=False, multiprocesses=1):
         else:
             return None, prev | set(np.unique(data))
 
-    result = sparse.run(process, prev={} if return_counts else set(), multiprocesses=multiprocesses)
+    result = sparse.run(
+        process, prev={} if return_counts else set(), multiprocesses=multiprocesses
+    )
 
     result_merged = {} if return_counts else set()
     for process in result:
@@ -65,27 +72,44 @@ def unique(sparse, return_counts=False, multiprocesses=1):
 
 
 def downscale(sparse, stride=(2, 2, 2)):
-    ret = Sparse.empty_like(sparse,
-                            chunks=(sparse.chunks[0] // stride[0],
-                                    sparse.chunks[1] // stride[1],
-                                    sparse.chunks[2] // stride[2]),
-                            shape=(sparse.shape[0] // stride[0],
-                                   sparse.shape[1] // stride[1],
-                                   sparse.shape[2] // stride[2]),
-                            spacing=(sparse.spacing[0] * stride[0],
-                                     sparse.spacing[1] * stride[1],
-                                     sparse.spacing[2] * stride[2]))
+    ret = Sparse.empty_like(
+        sparse,
+        chunks=(
+            sparse.chunks[0] // stride[0],
+            sparse.chunks[1] // stride[1],
+            sparse.chunks[2] // stride[2],
+        ),
+        shape=(
+            sparse.shape[0] // stride[0],
+            sparse.shape[1] // stride[1],
+            sparse.shape[2] // stride[2],
+        ),
+        spacing=(
+            sparse.spacing[0] * stride[0],
+            sparse.spacing[1] * stride[1],
+            sparse.spacing[2] * stride[2],
+        ),
+    )
 
     for k in sparse._grid.keys():
-        value = sparse._grid[k][0] if sparse._grid[k].shape == (1,) else sparse._grid[k][::stride[0], ::stride[1],
-                                                                         ::stride[2]]
+        value = (
+            sparse._grid[k][0]
+            if sparse._grid[k].shape == (1,)
+            else sparse._grid[k][:: stride[0], :: stride[1], :: stride[2]]
+        )
         ret.set_chunk(k, value)
 
     return ret
 
 
 def sum(sparse, multiprocesses=1):
-    return np.sum(sparse.run(lambda data, prev: (None, prev + np.sum(data)), prev=0, multiprocesses=multiprocesses))
+    return np.sum(
+        sparse.run(
+            lambda data, prev: (None, prev + np.sum(data)),
+            prev=0,
+            multiprocesses=multiprocesses,
+        )
+    )
 
 
 def downsample(sparse, stride=(3, 3, 3)):
@@ -93,7 +117,9 @@ def downsample(sparse, stride=(3, 3, 3)):
     # TODO: is this copy made because of issue #16?
     sparse_copy.copy_from(sparse)
 
-    sparse_downscaled = Sparse(np.array(sparse.shape) // np.array(stride), dtype=np.float32)
+    sparse_downscaled = Sparse(
+        np.array(sparse.shape) // np.array(stride), dtype=np.float32
+    )
     sparse_downscaled.origin = sparse.origin
     sparse_downscaled.spacing = np.array(sparse.spacing) * np.array(stride)
 
@@ -103,13 +129,13 @@ def downsample(sparse, stride=(3, 3, 3)):
         for i in range(stride[0]):
             for j in range(stride[1]):
                 for k in range(stride[2]):
-                    accu += chunk[i::stride[0], j::stride[1], k::stride[2]]
+                    accu += chunk[i :: stride[0], j :: stride[1], k :: stride[2]]
 
         coord = sparse_copy._chunk_to_global_coord(chunk.idx, (0, 0, 0)) // stride
 
-        prev[coord[0]:coord[0] + 16,
-        coord[1]:coord[1] + 16,
-        coord[2]:coord[2] + 16] = accu / (stride[0] * stride[1] * stride[2])
+        prev[
+            coord[0] : coord[0] + 16, coord[1] : coord[1] + 16, coord[2] : coord[2] + 16
+        ] = accu / (stride[0] * stride[1] * stride[2])
 
         # TODO: should it return (None, prev) after issue #16 ?
         return chunk, prev
@@ -119,9 +145,11 @@ def downsample(sparse, stride=(3, 3, 3)):
 
 def sum_slice(sparse, z, y, x):
     def process(idx, gs, z, y, x, prev):
-        chunk_size = abs(abs(x.stop - x.start) // x.step) * \
-                     abs(abs(y.stop - y.start) // y.step) * \
-                     abs(abs(z.stop - z.start) // z.step)
+        chunk_size = (
+            abs(abs(x.stop - x.start) // x.step)
+            * abs(abs(y.stop - y.start) // y.step)
+            * abs(abs(z.stop - z.start) // z.step)
+        )
 
         if idx in sparse._grid.keys():
             if sparse._grid[idx].shape == (1,):
@@ -135,11 +163,13 @@ def sum_slice(sparse, z, y, x):
 
     z, y, x = slice_normalize((z, y, x), sparse.shape)
 
-    return sparse.raw_run(process,
-                          (z.start, y.start, x.start),
-                          (z.stop, y.stop, x.stop),
-                          step=(z.step, y.step, x.step),
-                          prev=0)
+    return sparse.raw_run(
+        process,
+        (z.start, y.start, x.start),
+        (z.stop, y.stop, x.stop),
+        step=(z.step, y.step, x.step),
+        prev=0,
+    )
 
 
 def where(sparse, func):
@@ -158,62 +188,74 @@ def where(sparse, func):
 
 def max(sparse, multiprocesses=1):
     f = np.max
-    return f(sparse.run(
-                        lambda data, prev: (None, f([prev, f(data)])),
-                        prev=min_dtype(sparse.dtype),
-                        multiprocesses=multiprocesses,
-                        )
-            )
+    return f(
+        sparse.run(
+            lambda data, prev: (None, f([prev, f(data)])),
+            prev=min_dtype(sparse.dtype),
+            multiprocesses=multiprocesses,
+        )
+    )
 
 
 def nanmax(sparse, multiprocesses=1):
     f = np.nanmax
-    return f(sparse.run(
-                        lambda data, prev: (None, f([prev, f(data)])),
-                        prev=min_dtype(sparse.dtype),
-                        multiprocesses=multiprocesses,
-                        )
-            )
+    return f(
+        sparse.run(
+            lambda data, prev: (None, f([prev, f(data)])),
+            prev=min_dtype(sparse.dtype),
+            multiprocesses=multiprocesses,
+        )
+    )
 
 
 def max_slice(sparse, z, y, x):
     z, y, x = slice_normalize((z, y, x), sparse.shape)
 
-    return sparse.raw_run(lambda idx, gs, z, y, x, prev: np.max([prev, np.max(sparse.get_chunk(idx)[x, y, x])]),
-                          (z.start, y.start, x.start),
-                          (z.stop, y.stop, x.stop),
-                          step=(z.step, y.step, x.step),
-                          prev=-math.inf)
+    return sparse.raw_run(
+        lambda idx, gs, z, y, x, prev: np.max(
+            [prev, np.max(sparse.get_chunk(idx)[x, y, x])]
+        ),
+        (z.start, y.start, x.start),
+        (z.stop, y.stop, x.stop),
+        step=(z.step, y.step, x.step),
+        prev=-math.inf,
+    )
 
 
 def min(sparse, multiprocesses=1):
     f = np.min
-    return f(sparse.run(
-                        lambda data, prev: (None, f([prev, f(data)])),
-                        prev=max_dtype(sparse.dtype),
-                        multiprocesses=multiprocesses,
-                        )
-            )
+    return f(
+        sparse.run(
+            lambda data, prev: (None, f([prev, f(data)])),
+            prev=max_dtype(sparse.dtype),
+            multiprocesses=multiprocesses,
+        )
+    )
 
 
 def nanmin(sparse, multiprocesses=1):
     f = np.nanmin
-    return f(sparse.run(
-                        lambda data, prev: (None, f([prev, f(data)])),
-                        prev=max_dtype(sparse.dtype),
-                        multiprocesses=multiprocesses,
-                        )
-            )
+    return f(
+        sparse.run(
+            lambda data, prev: (None, f([prev, f(data)])),
+            prev=max_dtype(sparse.dtype),
+            multiprocesses=multiprocesses,
+        )
+    )
 
 
 def min_slice(sparse, z, y, x):
     z, y, x = slice_normalize((z, y, x), sparse.shape)
 
-    return sparse.raw_run(lambda idx, gs, z, y, x, prev: np.min([prev, np.min(sparse.get_chunk(idx)[x, y, x])]),
-                          (z.start, y.start, x.start),
-                          (z.stop, y.stop, x.stop),
-                          step=(z.step, y.step, x.step),
-                          prev=math.inf)
+    return sparse.raw_run(
+        lambda idx, gs, z, y, x, prev: np.min(
+            [prev, np.min(sparse.get_chunk(idx)[x, y, x])]
+        ),
+        (z.start, y.start, x.start),
+        (z.stop, y.stop, x.stop),
+        step=(z.step, y.step, x.step),
+        prev=math.inf,
+    )
 
 
 def mul(sparse_a, sparse_b):
@@ -233,11 +275,11 @@ def add_scalar(sparse_a, val, multiprocesses=1):
 
 
 def dilate(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
-    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
+    """see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
 
     This function requires: SimpleITK"""
     if not _have_sitk:
-        raise ImportError('Please install SimpleITK to use this function.')
+        raise ImportError("Please install SimpleITK to use this function.")
 
     if isinstance(kernel_radius, int):
         kernel_radius = (kernel_radius,) * 3
@@ -248,65 +290,80 @@ def dilate(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
     dilate_filter = sitk.BinaryDilateImageFilter()
     dilate_filter.SetKernelRadius(kernel_radius)
     dilate_filter.SetForegroundValue(foreground_value)
-    sparse.run(lambda data, prev:
-               (sitk.GetArrayFromImage(
-                   dilate_filter.Execute(
-                       sitk.GetImageFromArray(data)
-                   )
-               ), prev), envelope=kernel_radius, multiprocesses=multiprocesses)
+    sparse.run(
+        lambda data, prev: (
+            sitk.GetArrayFromImage(dilate_filter.Execute(sitk.GetImageFromArray(data))),
+            prev,
+        ),
+        envelope=kernel_radius,
+        multiprocesses=multiprocesses,
+    )
 
 
 def erode(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
-    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
+    """see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
 
     This function requires: SimpleITK"""
     if not _have_sitk:
-        raise ImportError('Please install SimpleITK to use this function.')
+        raise ImportError("Please install SimpleITK to use this function.")
 
     erode_filter = sitk.BinaryErodeImageFilter()
     erode_filter.SetKernelRadius(kernel_radius)
     erode_filter.SetForegroundValue(foreground_value)
-    sparse.run(lambda data, prev:
-               (sitk.GetArrayFromImage(
-                   erode_filter.Execute(
-                       sitk.GetImageFromArray(data)
-                   )
-               ), prev), envelope=kernel_radius, skip_neighbours=True, multiprocesses=multiprocesses)
+    sparse.run(
+        lambda data, prev: (
+            sitk.GetArrayFromImage(erode_filter.Execute(sitk.GetImageFromArray(data))),
+            prev,
+        ),
+        envelope=kernel_radius,
+        skip_neighbours=True,
+        multiprocesses=multiprocesses,
+    )
 
 
 def closing(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
-    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
+    """see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
 
     This function requires: SimpleITK"""
     if not _have_sitk:
-        raise ImportError('Please install SimpleITK to use this function.')
+        raise ImportError("Please install SimpleITK to use this function.")
 
     closing_filter = sitk.BinaryMorphologicalClosingImageFilter()
     closing_filter.SetKernelRadius(kernel_radius)
     closing_filter.SetForegroundValue(foreground_value)
-    sparse.run(lambda data, prev:
-               (sitk.GetArrayFromImage(
-                   closing_filter.Execute(
-                       sitk.GetImageFromArray(data)
-                   )
-               ), prev), envelope=kernel_radius, multiprocesses=multiprocesses)
+    sparse.run(
+        lambda data, prev: (
+            sitk.GetArrayFromImage(
+                closing_filter.Execute(sitk.GetImageFromArray(data))
+            ),
+            prev,
+        ),
+        envelope=kernel_radius,
+        multiprocesses=multiprocesses,
+    )
 
 
 def opening(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
-    """ see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
+    """see: http://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm
 
     This function requires: SimpleITK"""
     if not _have_sitk:
-        raise ImportError('Please install SimpleITK to use this function.')
+        raise ImportError("Please install SimpleITK to use this function.")
 
     opening_filter = sitk.BinaryMorphologicalOpeningImageFilter()
     opening_filter.SetKernelRadius(kernel_radius)
     opening_filter.SetForegroundValue(foreground_value)
-    sparse.run(lambda data, prev: (sitk.GetArrayFromImage(
-        opening_filter.Execute(
-            sitk.GetImageFromArray(data)
-        )
-    ), prev), envelope=kernel_radius, skip_neighbours=True, multiprocesses=multiprocesses)
+    sparse.run(
+        lambda data, prev: (
+            sitk.GetArrayFromImage(
+                opening_filter.Execute(sitk.GetImageFromArray(data))
+            ),
+            prev,
+        ),
+        envelope=kernel_radius,
+        skip_neighbours=True,
+        multiprocesses=multiprocesses,
+    )
 
 
 def thinning(sparse, envelope, multiprocesses=1):
@@ -314,15 +371,21 @@ def thinning(sparse, envelope, multiprocesses=1):
 
     This function requires: ITK"""
     if not _have_itk:
-        raise ImportError('Please install ITK to use this function.')
+        raise ImportError("Please install ITK to use this function.")
     if not _have_itk_thickness:
-        raise ImportError('Please install itk-thickness3d to use this function.')
+        raise ImportError("Please install itk-thickness3d to use this function.")
 
-    sparse.run(lambda data, prev: (itk.GetArrayFromImage(
-        itk.BinaryThinningImageFilter3D.New(
-            itk.GetImageFromArray(data)
-        )
-    ), prev), envelope=envelope, skip_neighbours=True, multiprocesses=multiprocesses)
+    sparse.run(
+        lambda data, prev: (
+            itk.GetArrayFromImage(
+                itk.BinaryThinningImageFilter3D.New(itk.GetImageFromArray(data))
+            ),
+            prev,
+        ),
+        envelope=envelope,
+        skip_neighbours=True,
+        multiprocesses=multiprocesses,
+    )
 
 
 def thinning_diameter(sparse, envelope, multiprocesses=2):
@@ -331,21 +394,27 @@ def thinning_diameter(sparse, envelope, multiprocesses=2):
 
     This function requires: ITK"""
     if not _have_itk:
-        raise ImportError('Please install ITK to use this function.')
+        raise ImportError("Please install ITK to use this function.")
     if not _have_itk_thickness:
-        raise ImportError('Please install itk-thickness3d to use this function.')
+        raise ImportError("Please install itk-thickness3d to use this function.")
 
     if multiprocesses == 1:
         warnings.warn(
-            'Disabled multiprocessing creates a pool of threads which does not get deallocated. '
-            'Subsequent calls with multiprocessing **enabled** will be locked indefinitely.'
+            "Disabled multiprocessing creates a pool of threads which does not get deallocated. "
+            "Subsequent calls with multiprocessing **enabled** will be locked indefinitely."
         )
 
-    sparse.run(lambda data, prev: (itk.GetArrayFromImage(
-        itk.MedialThicknessImageFilter3D.New(
-            itk.GetImageFromArray(data)
-        )
-    ), prev), envelope=envelope, skip_neighbours=True, multiprocesses=multiprocesses)
+    sparse.run(
+        lambda data, prev: (
+            itk.GetArrayFromImage(
+                itk.MedialThicknessImageFilter3D.New(itk.GetImageFromArray(data))
+            ),
+            prev,
+        ),
+        envelope=envelope,
+        skip_neighbours=True,
+        multiprocesses=multiprocesses,
+    )
 
 
 def to_indices_value(sparse):
@@ -360,7 +429,9 @@ def to_indices_value(sparse):
                 x += offset[2]
                 y += offset[1]
                 z += offset[0]
-                coords.append(np.dstack((z, y, x, np.full(x.shape, val))).reshape(-1, 4))
+                coords.append(
+                    np.dstack((z, y, x, np.full(x.shape, val))).reshape(-1, 4)
+                )
 
     return np.vstack(coords)
 
@@ -381,9 +452,9 @@ def label(sparse, multiprocesses=1, fully_connected=False):
     This function requires: NetworkX, SimpleITK
     """
     if not _have_nx:
-        raise ImportError('Please install NetworkX to use this function.')
+        raise ImportError("Please install NetworkX to use this function.")
     if not _have_sitk:
-        raise ImportError('Please install SimpleITK to use this function.')
+        raise ImportError("Please install SimpleITK to use this function.")
 
     connected_compontent_filter = sitk.ConnectedComponentImageFilter()
 
@@ -391,7 +462,7 @@ def label(sparse, multiprocesses=1, fully_connected=False):
         raise NotImplementedError()
 
     if sparse.dtype != np.uint32:
-        warnings.warn('label in most cases require uint32 data to work properly')
+        warnings.warn("label in most cases require uint32 data to work properly")
 
     connected_compontent_filter.SetFullyConnected(fully_connected)
 
@@ -406,9 +477,7 @@ def label(sparse, multiprocesses=1, fully_connected=False):
 
     def initialize(data, prev):
         result = sitk.GetArrayFromImage(
-            connected_compontent_filter.Execute(
-                sitk.GetImageFromArray(data)
-            )
+            connected_compontent_filter.Execute(sitk.GetImageFromArray(data))
         )
 
         obj_count = connected_compontent_filter.GetObjectCount()
@@ -417,7 +486,9 @@ def label(sparse, multiprocesses=1, fully_connected=False):
 
         return result, (prev[0], prev[1] + obj_count)
 
-    component_count_per_chunk, component_sum = sparse.run(initialize, prev=([], 0), multiprocesses=multiprocesses)[0]
+    component_count_per_chunk, component_sum = sparse.run(
+        initialize, prev=([], 0), multiprocesses=multiprocesses
+    )[0]
 
     for k in sparse._grid.keys():
         # Z axis
@@ -456,12 +527,16 @@ def label(sparse, multiprocesses=1, fully_connected=False):
     add_scalar(sparse, component_sum + 1)
     component_index = 1
 
-    for k, component_count in zip(sorted(sparse._grid.keys()), component_count_per_chunk):
+    for k, component_count in zip(
+        sorted(sparse._grid.keys()), component_count_per_chunk
+    ):
         chunk = sparse.get_chunk(k)
 
         for _ in range(component_count):
             if component_index in val_map:
-                chunk[chunk == (component_index + component_sum + 1)] = val_map[component_index]
+                chunk[chunk == (component_index + component_sum + 1)] = val_map[
+                    component_index
+                ]
 
             component_index += 1
 
@@ -470,12 +545,14 @@ def label(sparse, multiprocesses=1, fully_connected=False):
         sparse.set_chunk(k, chunk)
 
 
-def contour(sparse, values, envelope=(1,1,1), quantize_points_factor=0.0, multiprocesses=1):
+def contour(
+    sparse, values, envelope=(1, 1, 1), quantize_points_factor=0.0, multiprocesses=1
+):
     """Generate isosurface(s) from a Sparse volume.
 
     This function requires: VTK"""
     if not _have_vtk:
-        raise ImportError('Please install vtk library to use this function.')
+        raise ImportError("Please install vtk library to use this function.")
 
     from .vtk_utils import add_np_to_vti
     from .geometry.extract import triangles
@@ -488,7 +565,9 @@ def contour(sparse, values, envelope=(1,1,1), quantize_points_factor=0.0, multip
         vti.SetDimensions(np.array(data.shape) - np.array(envelope))
         vti.SetSpacing(data.spacing)
         series_name = "sparse"
-        add_np_to_vti(vti, data[:-envelope[0], :-envelope[1], :-envelope[2]], series_name)
+        add_np_to_vti(
+            vti, data[: -envelope[0], : -envelope[1], : -envelope[2]], series_name
+        )
         vti.GetPointData().SetActiveScalars(series_name)
         contour = vtk.vtkImageMarchingCubes()
         contour.SetInputData(vti)
@@ -507,13 +586,14 @@ def contour(sparse, values, envelope=(1,1,1), quantize_points_factor=0.0, multip
         # TODO: could this return (None, prev) after issue #16 ?
         return data, prev
 
-    out = sparse.run(chunk_contour,
-                     envelope,
-                     np.array([values]).flatten(),
-                     envelope=envelope,
-                     multiprocesses=multiprocesses,
-                     prev=[],
-              )
+    out = sparse.run(
+        chunk_contour,
+        envelope,
+        np.array([values]).flatten(),
+        envelope=envelope,
+        multiprocesses=multiprocesses,
+        prev=[],
+    )
 
     appendFilter = vtk.vtkAppendPolyData()
     for contour in out:

@@ -15,7 +15,9 @@ from .multiprocesses import ProcessPool
 
 
 @njit
-def fast_get(ijk, dense_data, grid_mask, chunks, envelope=0, fill_value=0.0, error_value=0.0):
+def fast_get(
+    ijk, dense_data, grid_mask, chunks, envelope=0, fill_value=0.0, error_value=0.0
+):
     if ijk[0] < 0 or ijk[1] < 0 or ijk[2] < 0:
         return error_value
 
@@ -30,10 +32,12 @@ def fast_get(ijk, dense_data, grid_mask, chunks, envelope=0, fill_value=0.0, err
 
     idx = grid_mask[bi, bj, bk]
 
-    if idx != 0xffffffff:
-        return dense_data[envelope + idx * (chunks[0] + 2 * envelope) + li,
-                          envelope + lj,
-                          envelope + lk]
+    if idx != 0xFFFFFFFF:
+        return dense_data[
+            envelope + idx * (chunks[0] + 2 * envelope) + li,
+            envelope + lj,
+            envelope + lk,
+        ]
     else:
         return fill_value
 
@@ -41,29 +45,43 @@ def fast_get(ijk, dense_data, grid_mask, chunks, envelope=0, fill_value=0.0, err
 @njit
 def fast_get_interpolated(ijk, dense_data, grid_mask, shape, envelope=0):
     """
-           *-----------*
-          /|5         /|6           k (x)
-         / |         / |            ^
-        /  |        /  |            |
-       *-----------*   |            |
-       |8  *-------|7--*             ----> i (z)
-       |  / 1      |  / 2          /
-       | /         | /            /
-       |/          |/            v
-       *-----------*            j (y)
-      4           3
+         *-----------*
+        /|5         /|6           k (x)
+       / |         / |            ^
+      /  |        /  |            |
+     *-----------*   |            |
+     |8  *-------|7--*             ----> i (z)
+     |  / 1      |  / 2          /
+     | /         | /            /
+     |/          |/            v
+     *-----------*            j (y)
+    4           3
     """
     ijk_base = np.array(ijk).astype(np.uint32)
     t = np.array(ijk) - ijk_base
 
     v1 = fast_get(ijk_base, dense_data, grid_mask, shape, envelope)
-    v2 = fast_get(ijk_base + np.array([1, 0, 0]), dense_data, grid_mask, shape, envelope)
-    v4 = fast_get(ijk_base + np.array([0, 1, 0]), dense_data, grid_mask, shape, envelope)
-    v3 = fast_get(ijk_base + np.array([1, 1, 0]), dense_data, grid_mask, shape, envelope)
-    v5 = fast_get(ijk_base + np.array([0, 0, 1]), dense_data, grid_mask, shape, envelope)
-    v6 = fast_get(ijk_base + np.array([1, 0, 1]), dense_data, grid_mask, shape, envelope)
-    v7 = fast_get(ijk_base + np.array([1, 1, 1]), dense_data, grid_mask, shape, envelope)
-    v8 = fast_get(ijk_base + np.array([0, 1, 1]), dense_data, grid_mask, shape, envelope)
+    v2 = fast_get(
+        ijk_base + np.array([1, 0, 0]), dense_data, grid_mask, shape, envelope
+    )
+    v4 = fast_get(
+        ijk_base + np.array([0, 1, 0]), dense_data, grid_mask, shape, envelope
+    )
+    v3 = fast_get(
+        ijk_base + np.array([1, 1, 0]), dense_data, grid_mask, shape, envelope
+    )
+    v5 = fast_get(
+        ijk_base + np.array([0, 0, 1]), dense_data, grid_mask, shape, envelope
+    )
+    v6 = fast_get(
+        ijk_base + np.array([1, 0, 1]), dense_data, grid_mask, shape, envelope
+    )
+    v7 = fast_get(
+        ijk_base + np.array([1, 1, 1]), dense_data, grid_mask, shape, envelope
+    )
+    v8 = fast_get(
+        ijk_base + np.array([0, 1, 1]), dense_data, grid_mask, shape, envelope
+    )
 
     v12 = v1 * (1 - t[0]) + v2 * t[0]
     v43 = v4 * (1 - t[0]) + v3 * t[0]
@@ -112,12 +130,20 @@ def fast_point_probe(xyz, dense_data, grid_mask, shape, origin, spacing, envelop
 
         v1 = fast_get(b, dense_data, grid_mask, shape, envelope)
         v2 = fast_get((b[0] + 1, b[1], b[2]), dense_data, grid_mask, shape, envelope)
-        v3 = fast_get((b[0] + 1, b[1] + 1, b[2]), dense_data, grid_mask, shape, envelope)
+        v3 = fast_get(
+            (b[0] + 1, b[1] + 1, b[2]), dense_data, grid_mask, shape, envelope
+        )
         v4 = fast_get((b[0], b[1] + 1, b[2]), dense_data, grid_mask, shape, envelope)
         v5 = fast_get((b[0], b[1], b[2] + 1), dense_data, grid_mask, shape, envelope)
-        v6 = fast_get((b[0] + 1, b[1], b[2] + 1), dense_data, grid_mask, shape, envelope)
-        v7 = fast_get((b[0] + 1, b[1] + 1, b[2] + 1), dense_data, grid_mask, shape, envelope)
-        v8 = fast_get((b[0], b[1] + 1, b[2] + 1), dense_data, grid_mask, shape, envelope)
+        v6 = fast_get(
+            (b[0] + 1, b[1], b[2] + 1), dense_data, grid_mask, shape, envelope
+        )
+        v7 = fast_get(
+            (b[0] + 1, b[1] + 1, b[2] + 1), dense_data, grid_mask, shape, envelope
+        )
+        v8 = fast_get(
+            (b[0], b[1] + 1, b[2] + 1), dense_data, grid_mask, shape, envelope
+        )
 
         v12 = v1 * (1 - t[0]) + v2 * t[0]
         v43 = v4 * (1 - t[0]) + v3 * t[0]
@@ -137,7 +163,9 @@ def point_probe(xyz, p, envelope=0):
     Wraps numba compiled `fast_point_probe`.
     """
     if p.grid_mask is None:
-        raise RuntimeError('Missing grid_mask in sparse array. Use update_grid_mask() before point_probe().')
+        raise RuntimeError(
+            "Missing grid_mask in sparse array. Use update_grid_mask() before point_probe()."
+        )
 
     xyz = np.asarray(xyz)
 
@@ -147,7 +175,13 @@ def point_probe(xyz, p, envelope=0):
     assert len(xyz.shape) == 2 and xyz.shape[1] == 3
 
     return fast_point_probe(
-        xyz, p.dense_data, p.grid_mask, np.array(p.chunks), np.array(p.origin), np.array(p.spacing), envelope
+        xyz,
+        p.dense_data,
+        p.grid_mask,
+        np.array(p.chunks),
+        np.array(p.origin),
+        np.array(p.spacing),
+        envelope,
     )
 
 
@@ -178,7 +212,15 @@ class Sparse:
         get_k3d_voxels_group_dict: get chunks as list of dict for use in K3D voxels group
     """
 
-    def __init__(self, shape, chunks=True, fill_value=0, dtype=np.double, origin=(0, 0, 0), spacing=(1.0, 1.0, 1.0)):
+    def __init__(
+        self,
+        shape,
+        chunks=True,
+        fill_value=0,
+        dtype=np.double,
+        origin=(0, 0, 0),
+        spacing=(1.0, 1.0, 1.0),
+    ):
         self._shape = None
         self._dtype = None
         self._chunk_shape = None
@@ -193,7 +235,9 @@ class Sparse:
         self.shape = shape
         self.origin = origin
         self.spacing = spacing
-        self._block_shape = tuple(np.ceil(np.divide(self.shape, self.chunks)).astype(np.int_))
+        self._block_shape = tuple(
+            np.ceil(np.divide(self.shape, self.chunks)).astype(np.int_)
+        )
         self._grid = dict()
 
         self._memory_blocks = []
@@ -201,12 +245,18 @@ class Sparse:
 
     def _validate_dense_data(self):
         if len(self._memory_blocks) != 1:
-            raise Exception('Memory blocks have wrong len: {}, use make_dense_data() to fix.'.format(
-                len(self._memory_blocks)))
+            raise Exception(
+                "Memory blocks have wrong len: {}, use make_dense_data() to fix.".format(
+                    len(self._memory_blocks)
+                )
+            )
 
         if self._memory_blocks_with_holes != 0:
-            raise Exception('Memory blocks having holes: {}, use make_dense_data() to fix.'.format(
-                self._memory_blocks_with_holes))
+            raise Exception(
+                "Memory blocks having holes: {}, use make_dense_data() to fix.".format(
+                    self._memory_blocks_with_holes
+                )
+            )
 
     @property
     def dense_data(self):
@@ -240,14 +290,22 @@ class Sparse:
     def make_dense_data(self, envelope=0):
         """Defragment self._memory_blocks into a single array with possible envelope around chunks."""
 
-        if len(self._memory_blocks) == 1 and self._memory_blocks_with_holes == 0 \
-                and self._memory_blocks[0].shape[2] == self._chunk_shape[2] + envelope * 2:
+        if (
+            len(self._memory_blocks) == 1
+            and self._memory_blocks_with_holes == 0
+            and self._memory_blocks[0].shape[2] == self._chunk_shape[2] + envelope * 2
+        ):
             # already defragmented
             return
 
-        dense_data = np.zeros(((self._chunk_shape[0] + envelope * 2) * self.nchunks_initialized,
-                               (self._chunk_shape[1] + envelope * 2),
-                               (self._chunk_shape[2] + envelope * 2)), dtype=self.dtype)
+        dense_data = np.zeros(
+            (
+                (self._chunk_shape[0] + envelope * 2) * self.nchunks_initialized,
+                (self._chunk_shape[1] + envelope * 2),
+                (self._chunk_shape[2] + envelope * 2),
+            ),
+            dtype=self.dtype,
+        )
 
         w = self._chunk_shape[0] + envelope * 2
 
@@ -255,8 +313,12 @@ class Sparse:
             o1, o2 = i * w + envelope, (i + 1) * w - envelope
 
             if envelope > 0:
-                dense_data[o1:o2, envelope:-envelope, envelope:-envelope] = self._grid[k]
-                self._grid[k] = self._make_chunk(dense_data[o1:o2, envelope:-envelope, envelope:-envelope], k)
+                dense_data[o1:o2, envelope:-envelope, envelope:-envelope] = self._grid[
+                    k
+                ]
+                self._grid[k] = self._make_chunk(
+                    dense_data[o1:o2, envelope:-envelope, envelope:-envelope], k
+                )
             else:
                 dense_data[o1:o2, :, :] = self._grid[k]
                 self._grid[k] = self._make_chunk(dense_data[o1:o2, :, :], k)
@@ -307,10 +369,10 @@ class Sparse:
         elif isinstance(val, tuple) and len(val) == 3:
             val = tuple(np.array(val, dtype=np.int))
         else:
-            raise ValueError('invalid shape specified')
+            raise ValueError("invalid shape specified")
 
         if any(d <= 0 for d in val):
-            raise ValueError('all dimensions of shape must be positive')
+            raise ValueError("all dimensions of shape must be positive")
 
         self._shape = val
 
@@ -374,9 +436,14 @@ class Sparse:
     @property
     def chunks_initialized(self):
         """ List of copies of chunks that have been initialized with some data. """
-        return [Chunk(self._grid[k],
-                      spacing=self.spacing,
-                      origin=tuple(self.origin + np.multiply(k, self.spacing))) for k in self.kchunks_initialized]
+        return [
+            Chunk(
+                self._grid[k],
+                spacing=self.spacing,
+                origin=tuple(self.origin + np.multiply(k, self.spacing)),
+            )
+            for k in self.kchunks_initialized
+        ]
 
     @property
     def origin(self):
@@ -412,20 +479,25 @@ class Sparse:
 
     @property
     def grid_mask(self):
-        """ Grid mask is a dense array indicating indices of chunks.
-        It has to be manually updated using `update_grid_mask` """
+        """Grid mask is a dense array indicating indices of chunks.
+        It has to be manually updated using `update_grid_mask`"""
         return self._grid_mask
 
     def update_grid_mask(self):
         """
         An update of grid_mask attribute from dictionary of keys.
         """
-        if type(self._grid_mask) is not np.ndarray or self._grid_mask.shape != self._block_shape:
-            self._grid_mask = np.full(self._block_shape, 0xffffffff, dtype=np.uint32)
+        if (
+            type(self._grid_mask) is not np.ndarray
+            or self._grid_mask.shape != self._block_shape
+        ):
+            self._grid_mask = np.full(self._block_shape, 0xFFFFFFFF, dtype=np.uint32)
         else:
-            self._grid_mask.fill(0xffffffff)
+            self._grid_mask.fill(0xFFFFFFFF)
 
-        self._grid_mask[tuple(np.array(sorted(self._grid.keys())).T)] = np.arange(self.nchunks_initialized)
+        self._grid_mask[tuple(np.array(sorted(self._grid.keys())).T)] = np.arange(
+            self.nchunks_initialized
+        )
 
     def get_chunk(self, idx, dtype=None):
         """
@@ -440,7 +512,9 @@ class Sparse:
             dtype = self.dtype
 
         # TODO: set values of chunks outside array dimensions as NaN
-        if (idx < np.array([0, 0, 0])).any() or (idx >= np.array(self._block_shape)).any():
+        if (idx < np.array([0, 0, 0])).any() or (
+            idx >= np.array(self._block_shape)
+        ).any():
             raise Exception("Index out of range.", idx)
         if idx in self._grid.keys():
             if self._grid[idx].shape == (1,):
@@ -456,7 +530,9 @@ class Sparse:
 
     def _make_chunk(self, arr, idx):
         chunk = arr.view(Chunk)
-        chunk.origin = self.origin + (np.array(idx) * np.array(self.chunks))[::-1] * self.spacing
+        chunk.origin = (
+            self.origin + (np.array(idx) * np.array(self.chunks))[::-1] * self.spacing
+        )
         chunk.spacing = self.spacing
         chunk.idx = idx
 
@@ -497,7 +573,9 @@ class Sparse:
         """
 
         # TODO: add warrning if val.dtype != self.dtype
-        if (idx < np.array([0, 0, 0])).any() or (idx >= np.array(self._block_shape)).any():
+        if (idx < np.array([0, 0, 0])).any() or (
+            idx >= np.array(self._block_shape)
+        ).any():
             raise IndexError(f"Index {idx} out of range {self._block_shape}.")
 
         if isinstance(val, np.ndarray):
@@ -546,10 +624,10 @@ class Sparse:
             self.set_chunk(k, ret)
 
     def _run(self, *args, **kwargs):
-        func = kwargs.get('sparse_func')
-        envelope = kwargs.get('envelope')
-        keys = kwargs.get('keys')
-        prev = kwargs.get('prev')
+        func = kwargs.get("sparse_func")
+        envelope = kwargs.get("envelope")
+        keys = kwargs.get("keys")
+        prev = kwargs.get("prev")
 
         to_update = {}
 
@@ -561,10 +639,17 @@ class Sparse:
                     continue
                 to_update[tuple(k)] = ret
             else:
-                s = self._chunk_to_global_coord(k, (-envelope[0], - envelope[1], -envelope[2]))
-                e = self._chunk_to_global_coord(k, (self._chunk_shape[0] + envelope[0],
-                                                    self._chunk_shape[1] + envelope[1],
-                                                    self._chunk_shape[2] + envelope[2]))
+                s = self._chunk_to_global_coord(
+                    k, (-envelope[0], -envelope[1], -envelope[2])
+                )
+                e = self._chunk_to_global_coord(
+                    k,
+                    (
+                        self._chunk_shape[0] + envelope[0],
+                        self._chunk_shape[1] + envelope[1],
+                        self._chunk_shape[2] + envelope[2],
+                    ),
+                )
                 s_to_pad = s.copy()
                 s_to_pad[s_to_pad > 0] = 0
                 s_to_pad = np.abs(s_to_pad)
@@ -579,7 +664,12 @@ class Sparse:
                 e[e > shp] = shp[e > shp]
 
                 data = self.get(s, e)
-                data = np.pad(data, list(zip(s_to_pad, e_to_pad)), 'constant', constant_values=self.fill_value)
+                data = np.pad(
+                    data,
+                    list(zip(s_to_pad, e_to_pad)),
+                    "constant",
+                    constant_values=self.fill_value,
+                )
 
                 chunk = data.view(Chunk)
                 chunk.spacing = self.spacing
@@ -590,10 +680,11 @@ class Sparse:
                     # read-only func
                     continue
 
-                to_update[tuple(k)] = ret[envelope[0]:-envelope[0],
-                                      envelope[1]:-envelope[1],
-                                      envelope[2]:-envelope[2]
-                                      ]
+                to_update[tuple(k)] = ret[
+                    envelope[0] : -envelope[0],
+                    envelope[1] : -envelope[1],
+                    envelope[2] : -envelope[2],
+                ]
         return to_update, prev
 
     def _get_keys_for_run(self, envelope, skip_neighbours):
@@ -604,32 +695,50 @@ class Sparse:
             self.update_grid_mask()
             keys = set(self._grid.keys())
             if not skip_neighbours:
-                conv_size = np.array([2, 2, 2]) + np.ceil(np.array(envelope) / np.array(self.chunks)).astype(np.uint16)
-                neighbours = scipy.ndimage.filters.convolve(self.grid_mask.astype(np.uint16) != 0xFFFF,
-                                                            np.ones(conv_size),
-                                                            mode='constant',
-                                                            cval=0.0)
-                neighbours = (neighbours * ~(self.grid_mask.astype(np.uint16) != 0xFFFF)) > 0
+                conv_size = np.array([2, 2, 2]) + np.ceil(
+                    np.array(envelope) / np.array(self.chunks)
+                ).astype(np.uint16)
+                neighbours = scipy.ndimage.filters.convolve(
+                    self.grid_mask.astype(np.uint16) != 0xFFFF,
+                    np.ones(conv_size),
+                    mode="constant",
+                    cval=0.0,
+                )
+                neighbours = (
+                    neighbours * ~(self.grid_mask.astype(np.uint16) != 0xFFFF)
+                ) > 0
                 for idx in np.dstack(np.where(neighbours == True))[0]:
                     keys.add(tuple(idx.tolist()))
         return sorted(keys)
 
-    def _run_multiprocess(self, func, *args, envelope=(0, 0, 0), prev=None, skip_neighbours=False, multiprocesses=1):
+    def _run_multiprocess(
+        self,
+        func,
+        *args,
+        envelope=(0, 0, 0),
+        prev=None,
+        skip_neighbours=False,
+        multiprocesses=1,
+    ):
         pp = ProcessPool(multiprocesses)
         to_update = {}
         keys = self._get_keys_for_run(envelope, skip_neighbours)
         for k in np.array_split(keys, multiprocesses):
-            pp.add_job(dill.dumps({
-                'call': self._run,
-                'args': args,
-                'kwargs': {
-                    'sparse_func': func,
-                    'envelope': envelope,
-                    'sparse': self,
-                    'keys': k,
-                    'prev': prev,
-                },
-            }))
+            pp.add_job(
+                dill.dumps(
+                    {
+                        "call": self._run,
+                        "args": args,
+                        "kwargs": {
+                            "sparse_func": func,
+                            "envelope": envelope,
+                            "sparse": self,
+                            "keys": k,
+                            "prev": prev,
+                        },
+                    }
+                )
+            )
         pp.finish_pool_queue()
         prev_combined = []
         for chunks, prev in pp.shared.get():
@@ -639,12 +748,24 @@ class Sparse:
 
         return to_update, prev_combined
 
-    def _run_singleprocess(self, func, *args, envelope=(0, 0, 0), prev=None, skip_neighbours=False):
+    def _run_singleprocess(
+        self, func, *args, envelope=(0, 0, 0), prev=None, skip_neighbours=False
+    ):
         keys = self._get_keys_for_run(envelope, skip_neighbours)
-        to_update, prev = self._run(*args, sparse_func=func, envelope=envelope, prev=prev, keys=keys)
+        to_update, prev = self._run(
+            *args, sparse_func=func, envelope=envelope, prev=prev, keys=keys
+        )
         return to_update, [prev]  # list for compatibility with multiprocess
 
-    def run(self, func, *args, envelope=(0, 0, 0), prev=None, skip_neighbours=False, multiprocesses=1):
+    def run(
+        self,
+        func,
+        *args,
+        envelope=(0, 0, 0),
+        prev=None,
+        skip_neighbours=False,
+        multiprocesses=1,
+    ):
         """
         Run given function on every initialized Chunk (pycardio.sparse.chunk).
         :param func: Function to be called on Chunk,
@@ -669,19 +790,29 @@ class Sparse:
 
         to_update = {}
         if multiprocesses not in (0, 1):
-            if platform.system() != 'Linux':
-                raise NotImplementedError("Multiprocessing currently works only on Unix.")
+            if platform.system() != "Linux":
+                raise NotImplementedError(
+                    "Multiprocessing currently works only on Unix."
+                )
             if multiprocesses < 0:
-                physical_cores = psutil.cpu_count(logical = False)
+                physical_cores = psutil.cpu_count(logical=False)
                 multiprocesses = max(1, physical_cores + multiprocesses + 1)
-            to_update, prev = self._run_multiprocess(func, *args,
-                                                     envelope=envelope, prev=prev,
-                                                     skip_neighbours=skip_neighbours,
-                                                     multiprocesses=multiprocesses)
+            to_update, prev = self._run_multiprocess(
+                func,
+                *args,
+                envelope=envelope,
+                prev=prev,
+                skip_neighbours=skip_neighbours,
+                multiprocesses=multiprocesses,
+            )
         else:
-            to_update, prev = self._run_singleprocess(func, *args,
-                                                      envelope=envelope, prev=prev,
-                                                      skip_neighbours=skip_neighbours)
+            to_update, prev = self._run_singleprocess(
+                func,
+                *args,
+                envelope=envelope,
+                prev=prev,
+                skip_neighbours=skip_neighbours,
+            )
         for k in to_update.keys():
             self.set_chunk(k, to_update[k])
 
@@ -693,7 +824,10 @@ class Sparse:
         s = np.array(start)
         e = np.array(end)
         cs = np.array(self._chunk_shape)
-        blck = (np.floor_divide(s, self._chunk_shape), np.floor_divide(e, self._chunk_shape) + 1)
+        blck = (
+            np.floor_divide(s, self._chunk_shape),
+            np.floor_divide(e, self._chunk_shape) + 1,
+        )
 
         gs = s.copy()
 
@@ -716,18 +850,31 @@ class Sparse:
                         slice(ls[1], le[1], step[1]),
                         slice(ls[2], le[2], step[2]),
                         prev,
-                        *args
+                        *args,
                     )
 
-                    gs[2] = self._chunk_to_global_coord(
-                        ls_c, np.floor_divide(le - ls - 1, step) * step + ls
-                    )[2] + step[2]
+                    gs[2] = (
+                        self._chunk_to_global_coord(
+                            ls_c, np.floor_divide(le - ls - 1, step) * step + ls
+                        )[2]
+                        + step[2]
+                    )
 
                 gs[2] = s[2]
-                gs[1] = self._chunk_to_global_coord(ls_c, np.floor_divide(le - ls - 1, step) * step + ls)[1] + step[1]
+                gs[1] = (
+                    self._chunk_to_global_coord(
+                        ls_c, np.floor_divide(le - ls - 1, step) * step + ls
+                    )[1]
+                    + step[1]
+                )
 
             gs[1] = s[1]
-            gs[0] = self._chunk_to_global_coord(ls_c, np.floor_divide(le - ls - 1, step) * step + ls)[0] + step[0]
+            gs[0] = (
+                self._chunk_to_global_coord(
+                    ls_c, np.floor_divide(le - ls - 1, step) * step + ls
+                )[0]
+                + step[0]
+            )
 
         return prev
 
@@ -747,9 +894,11 @@ class Sparse:
             tmp = self.get_chunk(idx)[z, y, x]
             ret_s = np.floor_divide(gs - s, step)
 
-            ret[ret_s[0]:ret_s[0] + tmp.shape[0],
-            ret_s[1]:ret_s[1] + tmp.shape[1],
-            ret_s[2]:ret_s[2] + tmp.shape[2]] = tmp
+            ret[
+                ret_s[0] : ret_s[0] + tmp.shape[0],
+                ret_s[1] : ret_s[1] + tmp.shape[1],
+                ret_s[2] : ret_s[2] + tmp.shape[2],
+            ] = tmp
 
         self.raw_run(process, start, end, step=step)
 
@@ -774,7 +923,10 @@ class Sparse:
         cs = np.array(self._chunk_shape)
         check_start_end(s, e, self._shape, check_end=(np.abs(step) == 1).all())
 
-        blck = (np.floor_divide(s, self._chunk_shape), np.ceil(np.divide(e, self._chunk_shape)).astype(np.uint32))
+        blck = (
+            np.floor_divide(s, self._chunk_shape),
+            np.ceil(np.divide(e, self._chunk_shape)).astype(np.uint32),
+        )
 
         gs = s.copy()
         idx = np.zeros(3, dtype=np.int_)
@@ -792,25 +944,48 @@ class Sparse:
                         break
 
                     ids = np.floor_divide(le - ls, step)
-                    tmp = val[idx[0]:idx[0] + ids[0], idx[1]:idx[1] + ids[1], idx[2]:idx[2] + ids[2]]
+                    tmp = val[
+                        idx[0] : idx[0] + ids[0],
+                        idx[1] : idx[1] + ids[1],
+                        idx[2] : idx[2] + ids[2],
+                    ]
 
                     # special case speedup - skip fill_value->fill_value
                     if (i, j, k) in self._grid.keys() or np.any(tmp != self.fill_value):
                         ret = self.get_chunk((i, j, k))
-                        ret[ls[0]:le[0]:step[0], ls[1]:le[1]:step[1], ls[2]:le[2]:step[2]] = tmp
+                        ret[
+                            ls[0] : le[0] : step[0],
+                            ls[1] : le[1] : step[1],
+                            ls[2] : le[2] : step[2],
+                        ] = tmp
 
                         self.set_chunk((i, j, k), ret)
 
                     idx[2] += ids[2]
-                    gs[2] = self._chunk_to_global_coord(ls_c, np.floor_divide(le - ls - 1, step) * step + ls)[2] + step[2]
+                    gs[2] = (
+                        self._chunk_to_global_coord(
+                            ls_c, np.floor_divide(le - ls - 1, step) * step + ls
+                        )[2]
+                        + step[2]
+                    )
                 idx[2] = 0
                 idx[1] += ids[1]
                 gs[2] = s[2]
-                gs[1] = self._chunk_to_global_coord(ls_c, np.floor_divide(le - ls - 1, step) * step + ls)[1] + step[1]
+                gs[1] = (
+                    self._chunk_to_global_coord(
+                        ls_c, np.floor_divide(le - ls - 1, step) * step + ls
+                    )[1]
+                    + step[1]
+                )
             idx[1] = 0
             idx[0] += ids[0]
             gs[1] = s[1]
-            gs[0] = self._chunk_to_global_coord(ls_c, np.floor_divide(le - ls - 1, step) * step + ls)[0] + step[0]
+            gs[0] = (
+                self._chunk_to_global_coord(
+                    ls_c, np.floor_divide(le - ls - 1, step) * step + ls
+                )[0]
+                + step[0]
+            )
 
     def _simple_get1(self, key):
         bi, li = divmod(key[0], self._chunk_shape[0])
@@ -824,7 +999,9 @@ class Sparse:
             else:
                 return chunk[li, lj, lk]
         else:
-            if (key < np.array([0, 0, 0])).any() or (key >= np.array(self._shape)).any():
+            if (key < np.array([0, 0, 0])).any() or (
+                key >= np.array(self._shape)
+            ).any():
                 raise IndexError("index out of range.")
             return self.fill_value
 
@@ -869,7 +1046,11 @@ class Sparse:
 
     def __setitem__(self, key, val):
         # simple case (single element)
-        if (np.shape(val) == () and np.shape(key) == (3,) and all(isinstance(k, int) for k in key)):
+        if (
+            np.shape(val) == ()
+            and np.shape(key) == (3,)
+            and all(isinstance(k, int) for k in key)
+        ):
             self._simple_set1(key, val)
             return
 
@@ -896,18 +1077,33 @@ class Sparse:
         """
         crop = np.array(crop)
         shape = tuple(
-            [self.chunks[dim] * (((self.shape[dim] - 1) // self.chunks[dim] + 1) - crop[dim][0] - crop[dim][1])
-             for dim in range(3)]
+            [
+                self.chunks[dim]
+                * (
+                    ((self.shape[dim] - 1) // self.chunks[dim] + 1)
+                    - crop[dim][0]
+                    - crop[dim][1]
+                )
+                for dim in range(3)
+            ]
         )
         origin = tuple(
-            [self.origin[dim] + crop[{0: 2, 1: 1, 2: 0}[dim]][0] * self.chunks[dim] * self.spacing[dim] for dim in
-             range(3)])
+            [
+                self.origin[dim]
+                + crop[{0: 2, 1: 1, 2: 0}[dim]][0]
+                * self.chunks[dim]
+                * self.spacing[dim]
+                for dim in range(3)
+            ]
+        )
         sparse_new = Sparse.empty_like(self, shape=shape, origin=origin)
 
         chunk_min = crop[:, 0]
         chunk_max = sparse_new.cdata_shape + crop[:, 0]
         for k in self._grid.keys():
-            if not np.any(np.array(k) < chunk_min) and not np.any(chunk_max < np.array(k)):
+            if not np.any(np.array(k) < chunk_min) and not np.any(
+                chunk_max < np.array(k)
+            ):
                 sparse_new.set_chunk(tuple(k - crop[:, 0]), self.get_chunk(k))
         return sparse_new
 
@@ -920,11 +1116,24 @@ class Sparse:
         """
         pad = np.array(pad)
         shape = tuple(
-            [self.chunks[dim] * ((self.shape[dim] - 1) // self.chunks[dim] + 1 + pad[dim][0] + pad[dim][1]) for dim in
-             range(3)])
+            [
+                self.chunks[dim]
+                * (
+                    (self.shape[dim] - 1) // self.chunks[dim]
+                    + 1
+                    + pad[dim][0]
+                    + pad[dim][1]
+                )
+                for dim in range(3)
+            ]
+        )
         origin = tuple(
-            [self.origin[dim] - pad[{0: 2, 1: 1, 2: 0}[dim]][0] * self.chunks[dim] * self.spacing[dim] for dim in
-             range(3)])
+            [
+                self.origin[dim]
+                - pad[{0: 2, 1: 1, 2: 0}[dim]][0] * self.chunks[dim] * self.spacing[dim]
+                for dim in range(3)
+            ]
+        )
         sparse_new = Sparse.empty_like(self, shape=shape, origin=origin)
         for k in self._grid.keys():
             sparse_new.set_chunk(tuple(pad[:, 0] + k), self.get_chunk(k))
@@ -946,23 +1155,41 @@ class Sparse:
         for k in self._grid.keys():
             coord = np.array(k, dtype=np.int) * self._chunk_shape
             mask = (coord + self._chunk_shape) > self._shape
-            end = self._chunk_shape - np.multiply(coord + self._chunk_shape - self._shape, mask.astype(np.int))
-            ret.append({'voxels': self.get_chunk(k)[:end[0], :end[1], :end[2]].astype(dtype),
-                        'coord': coord[::-1],
-                        'multiple': 1})
+            end = self._chunk_shape - np.multiply(
+                coord + self._chunk_shape - self._shape, mask.astype(np.int)
+            )
+            ret.append(
+                {
+                    "voxels": self.get_chunk(k)[: end[0], : end[1], : end[2]].astype(
+                        dtype
+                    ),
+                    "coord": coord[::-1],
+                    "multiple": 1,
+                }
+            )
         return ret
 
     def get_voxels_bounds(self):
         dx, dy, dz = self.spacing[0] / 2.0, self.spacing[1] / 2.0, self.spacing[2] / 2.0
 
-        return [self.origin[0] - dx, self.origin[0] + self.spacing[0] * (self._shape[2] - 1) + dx,
-                self.origin[1] - dy, self.origin[1] + self.spacing[1] * (self._shape[1] - 1) + dy,
-                self.origin[2] - dz, self.origin[2] + self.spacing[2] * (self._shape[0] - 1) + dz]
+        return [
+            self.origin[0] - dx,
+            self.origin[0] + self.spacing[0] * (self._shape[2] - 1) + dx,
+            self.origin[1] - dy,
+            self.origin[1] + self.spacing[1] * (self._shape[1] - 1) + dy,
+            self.origin[2] - dz,
+            self.origin[2] + self.spacing[2] * (self._shape[0] - 1) + dz,
+        ]
 
     def get_bounds(self):
-        return [self.origin[0], self.origin[0] + self.spacing[0] * (self._shape[2] - 1),
-                self.origin[1], self.origin[1] + self.spacing[1] * (self._shape[1] - 1),
-                self.origin[2], self.origin[2] + self.spacing[2] * (self._shape[0] - 1)]
+        return [
+            self.origin[0],
+            self.origin[0] + self.spacing[0] * (self._shape[2] - 1),
+            self.origin[1],
+            self.origin[1] + self.spacing[1] * (self._shape[1] - 1),
+            self.origin[2],
+            self.origin[2] + self.spacing[2] * (self._shape[0] - 1),
+        ]
 
     def copy_from(self, sparse):
         """
@@ -975,20 +1202,33 @@ class Sparse:
             chunk = sparse.get_chunk(k, dtype=self.dtype)
             s = chunk.shape
 
-            self.set(coord, chunk[
-                            0:min(s[0], self.shape[0] - coord[0]),
-                            0:min(s[1], self.shape[1] - coord[1]),
-                            0:min(s[2], self.shape[2] - coord[2])
-                            ])
+            self.set(
+                coord,
+                chunk[
+                    0 : min(s[0], self.shape[0] - coord[0]),
+                    0 : min(s[1], self.shape[1] - coord[1]),
+                    0 : min(s[2], self.shape[2] - coord[2]),
+                ],
+            )
 
     @staticmethod
-    def empty_like(sparse, shape=None, chunks=None, fill_value=None, dtype=None, origin=None, spacing=None):
-        return Sparse(shape if shape is not None else sparse.shape,
-                      chunks if chunks is not None else sparse.chunks,
-                      fill_value if fill_value is not None else sparse.fill_value,
-                      dtype if dtype is not None else sparse.dtype,
-                      origin if origin is not None else sparse.origin,
-                      spacing if spacing is not None else sparse.spacing)
+    def empty_like(
+        sparse,
+        shape=None,
+        chunks=None,
+        fill_value=None,
+        dtype=None,
+        origin=None,
+        spacing=None,
+    ):
+        return Sparse(
+            shape if shape is not None else sparse.shape,
+            chunks if chunks is not None else sparse.chunks,
+            fill_value if fill_value is not None else sparse.fill_value,
+            dtype if dtype is not None else sparse.dtype,
+            origin if origin is not None else sparse.origin,
+            spacing if spacing is not None else sparse.spacing,
+        )
 
     @staticmethod
     def create_from_k3d_voxels_group_dict(k3dvg, shape=None):
@@ -1001,8 +1241,8 @@ class Sparse:
         """
         geom_shape = chunk_shape = (0, 0, 0)
         for chunk in k3dvg:
-            geom_shape = np.maximum(geom_shape, chunk['coord'][::-1])
-            chunk_shape = np.maximum(chunk_shape, chunk['voxels'].shape)
+            geom_shape = np.maximum(geom_shape, chunk["coord"][::-1])
+            chunk_shape = np.maximum(chunk_shape, chunk["voxels"].shape)
         geom_shape += chunk_shape
         if shape is not None:
             geom_shape = shape
@@ -1011,8 +1251,12 @@ class Sparse:
 
         for chunk in k3dvg:
             filler = np.zeros(chunk_shape)
-            filler[:chunk['voxels'].shape[0], :chunk['voxels'].shape[1], :chunk['voxels'].shape[2]] = chunk['voxels']
-            s.set_chunk(tuple(chunk['coord'][::-1] // chunk_shape), filler)
+            filler[
+                : chunk["voxels"].shape[0],
+                : chunk["voxels"].shape[1],
+                : chunk["voxels"].shape[2],
+            ] = chunk["voxels"]
+            s.set_chunk(tuple(chunk["coord"][::-1] // chunk_shape), filler)
 
         return s
 
@@ -1025,7 +1269,7 @@ class Sparse:
                 "spacing": self.spacing,
                 "dtype": np.dtype(self.dtype).str,
                 "fill_value": self.fill_value,
-                "_grid": {k: v.to_dict() for k, v in self._grid.items()}
+                "_grid": {k: v.to_dict() for k, v in self._grid.items()},
             }
 
             data = msgpack.packb(d, default=m.encode)
@@ -1041,10 +1285,10 @@ class Sparse:
             d = file.read()
 
             msgpack_args = {
-                'object_hook': m.decode,
-                'use_list': False,
-                'strict_map_key': False,  # tuple as "map key" (msgpack 1.0)
-                'raw': True,  # return keys as b'shape' (msgpack 1.0)
+                "object_hook": m.decode,
+                "use_list": False,
+                "strict_map_key": False,  # tuple as "map key" (msgpack 1.0)
+                "raw": True,  # return keys as b'shape' (msgpack 1.0)
             }
 
             try:
@@ -1053,21 +1297,34 @@ class Sparse:
                 # FIXME: not a great way to detect compression, to say the least.
                 data = msgpack.unpackb(zlib.decompress(d), **msgpack_args)
 
-            s = Sparse(data[b'shape'], chunks=data[b'chunks'], fill_value=data[b'fill_value'],
-                       dtype=np.dtype(data[b'dtype']), origin=data[b'origin'], spacing=data[b'spacing'])
+            s = Sparse(
+                data[b"shape"],
+                chunks=data[b"chunks"],
+                fill_value=data[b"fill_value"],
+                dtype=np.dtype(data[b"dtype"]),
+                origin=data[b"origin"],
+                spacing=data[b"spacing"],
+            )
 
-            s._grid = {k: Chunk.from_dict(v) for k, v in data[b'_grid'].items()}
+            s._grid = {k: Chunk.from_dict(v) for k, v in data[b"_grid"].items()}
 
             return s
 
     def copy(self):
-        s = Sparse(self.shape, chunks=self.chunks, fill_value=self.fill_value,
-                   dtype=self.dtype, origin=self.origin, spacing=self.spacing)
+        s = Sparse(
+            self.shape,
+            chunks=self.chunks,
+            fill_value=self.fill_value,
+            dtype=self.dtype,
+            origin=self.origin,
+            spacing=self.spacing,
+        )
 
-        s._grid = {k: Chunk.from_dict({
-            b'origin': v.origin,
-            b'spacing': v.spacing,
-            b'ndarray': np.copy(v)
-        }) for k, v in self._grid.items()}
+        s._grid = {
+            k: Chunk.from_dict(
+                {b"origin": v.origin, b"spacing": v.spacing, b"ndarray": np.copy(v)}
+            )
+            for k, v in self._grid.items()
+        }
 
         return s

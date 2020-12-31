@@ -34,7 +34,7 @@ class ProcessPool:
         self.queue_jobs = JoinableQueue()
         self.processes = []
 
-        BaseManager.register('Shared', self.Shared)
+        BaseManager.register("Shared", self.Shared)
         self.manager = BaseManager()
         self.manager.start()
         self.shared = self.manager.Shared()
@@ -54,9 +54,9 @@ class ProcessPool:
                 break
 
             item = dill.loads(item_pickled)
-            call = item.get('call')
-            args = item.get('args')
-            kwargs = item.get('kwargs')
+            call = item.get("call")
+            args = item.get("args")
+            kwargs = item.get("kwargs")
 
             try:
                 result = call(*args, **kwargs)
@@ -64,6 +64,7 @@ class ProcessPool:
 
             except Exception as e:
                 import traceback
+
                 traceback.print_exc()
                 os.kill(os.getpid(), signal.SIGUSR1)
 

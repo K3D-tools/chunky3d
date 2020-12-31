@@ -1,7 +1,6 @@
 import numpy as np
 
 
-
 def adjust_key(key, shape):
     """Prepare a slicing tuple (key) for slicing an array of specific shape."""
 
@@ -15,10 +14,10 @@ def adjust_key(key, shape):
         ellipsis_pos = key.index(Ellipsis)
 
         missing = (slice(None),) * (len(shape) - len(key) + 1)
-        key = key[:ellipsis_pos] + missing + key[ellipsis_pos + 1:]
+        key = key[:ellipsis_pos] + missing + key[ellipsis_pos + 1 :]
 
-    if  len(key) > len(shape):
-        raise IndexError('too many indices for array')
+    if len(key) > len(shape):
+        raise IndexError("too many indices for array")
 
     if len(key) < len(shape):
         missing = (slice(None),) * (len(shape) - len(key))
@@ -32,7 +31,7 @@ def _check_slice(slc):
         x is not None and not np.issubdtype(type(x), np.integer)
         for x in (slc.start, slc.stop, slc.step)
     ):
-        raise IndexError('slice indices must be integers or None')
+        raise IndexError("slice indices must be integers or None")
 
 
 def slice_normalize(key, shape):
@@ -50,10 +49,12 @@ def slice_normalize(key, shape):
     for ctr, slc in enumerate(key):
         if not isinstance(slc, slice):  # when key is integer
             if not np.issubdtype(type(slc), np.integer):
-                raise IndexError('single indices must be integers')
+                raise IndexError("single indices must be integers")
 
             if slc < -shape[ctr] or slc >= shape[ctr]:
-                raise IndexError(f'index {slc} is out of bounds for axis {ctr} with size {shape[ctr]}')
+                raise IndexError(
+                    f"index {slc} is out of bounds for axis {ctr} with size {shape[ctr]}"
+                )
 
             if slc < 0:
                 # nasty case for [-1]
@@ -68,7 +69,7 @@ def slice_normalize(key, shape):
         if step is None:
             step = 1
         if step == 0:
-            raise ValueError(f'slice step of axis {ctr} cannot be zero')
+            raise ValueError(f"slice step of axis {ctr} cannot be zero")
 
         if start is None:
             start = 0 if step > 0 else shape[ctr] - 1
@@ -85,7 +86,6 @@ def slice_normalize(key, shape):
             stop = min(max(stop, -shape[ctr]), shape[ctr])
             if stop < 0:
                 stop = shape[ctr] + stop
-
 
         k.append(slice(start, stop, step))
     return tuple(k)
@@ -121,7 +121,7 @@ def pad_to_chunk(a, n):
     """
     to_n = lambda x, n: (0, x + (n - x % n) % n - x)
     to_ = lambda x: to_n(x, n)
-    a_padded = np.pad(a, list(map(to_, a.shape)), mode='constant')
+    a_padded = np.pad(a, list(map(to_, a.shape)), mode="constant")
     return a_padded
 
 
@@ -152,19 +152,24 @@ def max_dtype(t):
 def tighten_box(geo):
     """Remove empty space from bounding box in sparse"""
 
-    from .chunky import Sparse 
-    nonempty_chunks = {idx:c for idx,c in geo._grid.items()   if not np.all(c==geo.fill_value)}
- 
-    origins = np.array([c.origin for idx,c in nonempty_chunks.items()])
-    idxs = np.array([idx for idx,c in nonempty_chunks.items()])
-    
-    geo_tight  = Sparse((1+np.max(idxs,axis=0)-np.min(idxs,axis=0))*np.array(geo.chunks),
-                       chunks = geo.chunks,
-                       dtype = geo.dtype,
-                       origin = np.min(origins,axis=0),
-                       spacing = geo.spacing) 
-    for idx,c in nonempty_chunks.items():
-        idx_from_zero = tuple(np.array(idx) - np.min(idxs,axis=0))
-        geo_tight.set_chunk(idx_from_zero,c)
-    
+    from .chunky import Sparse
+
+    nonempty_chunks = {
+        idx: c for idx, c in geo._grid.items() if not np.all(c == geo.fill_value)
+    }
+
+    origins = np.array([c.origin for idx, c in nonempty_chunks.items()])
+    idxs = np.array([idx for idx, c in nonempty_chunks.items()])
+
+    geo_tight = Sparse(
+        (1 + np.max(idxs, axis=0) - np.min(idxs, axis=0)) * np.array(geo.chunks),
+        chunks=geo.chunks,
+        dtype=geo.dtype,
+        origin=np.min(origins, axis=0),
+        spacing=geo.spacing,
+    )
+    for idx, c in nonempty_chunks.items():
+        idx_from_zero = tuple(np.array(idx) - np.min(idxs, axis=0))
+        geo_tight.set_chunk(idx_from_zero, c)
+
     return geo_tight

@@ -1,5 +1,6 @@
 import vtk
 
+
 def _extract(polydata, celltypes):
     ids = vtk.vtkIdTypeArray()
     ids.SetNumberOfComponents(1)
@@ -28,6 +29,11 @@ def _extract(polydata, celltypes):
 
 
 def triangles(polydata):
-    gf = _extract(polydata, celltypes=[vtk.VTK_TRIANGLE,])
+    gf = _extract(
+        polydata,
+        celltypes=[
+            vtk.VTK_TRIANGLE,
+        ],
+    )
     gf.Update()
     return gf.GetOutput()

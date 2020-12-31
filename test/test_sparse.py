@@ -5,6 +5,7 @@ import os
 
 import numpy as np
 
+
 class TestImage(unittest.TestCase):
     def test_zero(self):
         shp = (10, 10, 10)
@@ -30,7 +31,7 @@ class TestImage(unittest.TestCase):
 
         test_data = np.zeros(shape=dims)
 
-        test_data[:dims[0] // 3, :dims[1] // 4, 32] = 3.14
+        test_data[: dims[0] // 3, : dims[1] // 4, 32] = 3.14
 
         test_data[128:160, 128:161, 128:159] = np.random.rand(32, 33, 31)
 
@@ -42,12 +43,11 @@ class TestImage(unittest.TestCase):
                     np.testing.assert_array_equal(
                         s.get_chunk((i, j, k)),
                         test_data[
-                            i * chunk_shape:(i + 1) * chunk_shape,
-                            j * chunk_shape:(j + 1) * chunk_shape,
-                            k * chunk_shape:(k + 1) * chunk_shape
-                        ]
+                            i * chunk_shape : (i + 1) * chunk_shape,
+                            j * chunk_shape : (j + 1) * chunk_shape,
+                            k * chunk_shape : (k + 1) * chunk_shape,
+                        ],
                     )
-
 
     def test_getitem(self):
         shp = (234, 231, 128)
@@ -68,7 +68,7 @@ class TestImage(unittest.TestCase):
 
         for _ in range(10):
             i, j, k = map(np.random.randint, shp)
-            v_slice = s[i:i+1, j:j+1, k:k+1]
+            v_slice = s[i : i + 1, j : j + 1, k : k + 1]
             v_simple = s[i, j, k]
             self.assertEqual(v_simple, v_slice)
 
@@ -86,7 +86,7 @@ class TestImage(unittest.TestCase):
         for _ in range(200):
             i, j, k = map(np.random.randint, shp)
             val = np.random.random()
-            s_slice[i:i+1, j:j+1, k:k+1] = val
+            s_slice[i : i + 1, j : j + 1, k : k + 1] = val
             s_point[i, j, k] = val
 
         np.testing.assert_array_equal(s_slice[...], s_point[...])
@@ -97,28 +97,28 @@ class TestImage(unittest.TestCase):
         s = Sparse(shp, dtype=np.uint8, chunks=(16, 32, 8), fill_value=0)
         s.set((0, 0, 0), mga)
 
-        s.save('save.msgpack', compression_level)
-        loaded_s = Sparse.load('save.msgpack')
+        s.save("save.msgpack", compression_level)
+        loaded_s = Sparse.load("save.msgpack")
 
         for (k1, v1), (k2, v2) in zip(vars(s).items(), vars(loaded_s).items()):
             self.assertEqual(k1, k2)
 
-            if k1 not in ['_grid', '_memory_blocks']:
+            if k1 not in ["_grid", "_memory_blocks"]:
                 # fields like 'shape' etc.
                 self.assertEqual(v1, v2)
                 continue
 
-            if k1 == '_grid':
+            if k1 == "_grid":
                 for (_, d1), (_, d2) in zip(v1.items(), v2.items()):
                     np.testing.assert_array_equal(d1, d2)
                 continue
 
-            if k1 == '_memory_blocks':
+            if k1 == "_memory_blocks":
                 for d1, d2 in zip(v1, v2):
                     np.testing.assert_array_equal(d1, d2)
                 continue
 
-        os.remove('save.msgpack')
+        os.remove("save.msgpack")
 
     def test_save_compress(self):
         self.save_load(6)
@@ -142,7 +142,9 @@ class TestImage(unittest.TestCase):
         self.assertEqual(len(s._memory_blocks), 2)
         two_chunks = s.__sizeof__()
 
-        self.assertAlmostEqual(two_chunks - single_chunk, single_chunk - empty_memory, delta=32)
+        self.assertAlmostEqual(
+            two_chunks - single_chunk, single_chunk - empty_memory, delta=32
+        )
 
         s.make_dense_data()
         self.assertEqual(len(s._memory_blocks), 1)
@@ -162,7 +164,7 @@ class TestBroadcasting(unittest.TestCase):
         n = np.zeros((4, 4, 4))
         with self.assertRaises(ValueError) as cm:
             n[:3, :3, :3] = np.ones((2, 2, 2))
-        self.assertTrue(str(cm.exception).startswith('could not broadcast'))
+        self.assertTrue(str(cm.exception).startswith("could not broadcast"))
 
         # chunky behavior
         s = Sparse(shape=(4, 4, 4))
@@ -170,14 +172,16 @@ class TestBroadcasting(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             s[:3, :3, :3] = np.ones((2, 2, 2))
         # time will show if this message is constant
-        self.assertTrue(str(cm.exception).startswith('operands could not be broadcast together'))
+        self.assertTrue(
+            str(cm.exception).startswith("operands could not be broadcast together")
+        )
 
     def test_too_big(self):
         # base behavior
         n = np.zeros((4, 4, 4))
         with self.assertRaises(ValueError) as cm:
             n[:3, :3, :3] = np.ones((4, 4, 4))
-        self.assertTrue(str(cm.exception).startswith('could not broadcast'))
+        self.assertTrue(str(cm.exception).startswith("could not broadcast"))
 
         # chunky behavior
         s = Sparse(shape=(4, 4, 4))
@@ -185,7 +189,9 @@ class TestBroadcasting(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             s[:3, :3, :3] = np.ones((4, 4, 4))
         # time will show if this message is constant
-        self.assertTrue(str(cm.exception).startswith('operands could not be broadcast together'))
+        self.assertTrue(
+            str(cm.exception).startswith("operands could not be broadcast together")
+        )
 
     def test_uniform_value(self):
         s = Sparse(shape=(4, 4, 4))
@@ -257,15 +263,15 @@ class TestProperties(unittest.TestCase):
     def test_unsigned_shape(self):
         s = Sparse(tuple(np.arange(2, 5, dtype=np.uint8)))
         print(s.shape)
-        self.assertTrue(
-            np.all(-np.array(s.shape) < 0)  # unsinged would be > 0
-        )
+        self.assertTrue(np.all(-np.array(s.shape) < 0))  # unsinged would be > 0
 
     def test_negative_shape(self):
         with self.assertRaises(ValueError) as cm:
             Sparse((10, -2, 10))
-        self.assertTrue(str(cm.exception).startswith('all dimensions of shape must be positive'))
+        self.assertTrue(
+            str(cm.exception).startswith("all dimensions of shape must be positive")
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
