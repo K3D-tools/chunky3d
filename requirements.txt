@@ -4,3 +4,4 @@ msgpack_numpy
 numba
 psutil
 scipy
+scikit-image
