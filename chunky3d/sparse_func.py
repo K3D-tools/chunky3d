@@ -566,7 +566,7 @@ def contour(
         vti.SetSpacing(data.spacing)
         series_name = "sparse"
         add_np_to_vti(
-            vti, data[: -envelope[0], : -envelope[1], : -envelope[2]], series_name
+            vti, data[envelope[0]:-envelope[0], envelope[1]:-envelope[1], envelope[2]:-envelope[2]], series_name
         )
         vti.GetPointData().SetActiveScalars(series_name)
         contour = vtk.vtkImageMarchingCubes()
