@@ -651,6 +651,7 @@ class Sparse:
                     ),
                 )
                 s_to_pad = s.copy()
+                s_orig = s.copy()
                 s_to_pad[s_to_pad > 0] = 0
                 s_to_pad = np.abs(s_to_pad)
                 s[s < 0] = 0
@@ -673,7 +674,7 @@ class Sparse:
 
                 chunk = data.view(Chunk)
                 chunk.spacing = self.spacing
-                chunk.origin = self.origin + s[::-1] * self.spacing
+                chunk.origin = self.origin + s_orig[::-1] * self.spacing
 
                 ret, prev = func(chunk, prev, *args)
                 if ret is None:
