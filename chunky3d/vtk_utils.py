@@ -511,7 +511,7 @@ def vtp_from_verts_faces(verts, faces):
 
 
 from scipy.ndimage.filters import gaussian_filter
-from skimage.measure import marching_cubes_lewiner
+from skimage.measure import marching_cubes
 
 
 def marching_cubes_with_smooth(mask, sigma=1.2, level=0.5):
@@ -535,7 +535,7 @@ def marching_cubes_with_smooth(mask, sigma=1.2, level=0.5):
     mask_s = Sparse.empty_like(mask, dtype=np.float32)
     mask_s.copy_from(mask)
     mask_s.run(lambda d, _: (gaussian_filter(d, sigma), None), envelope=(5, 5, 5))
-    verts, faces, normals, values = marching_cubes_lewiner(mask_s[:, :, :], 0.5)
+    verts, faces, normals, values = marching_cubes(mask_s[:, :, :], 0.5)
     verts = np.array(origin, dtype=np.float32) + (
         verts[:, ::-1].astype(np.float32) * spacing
     )
