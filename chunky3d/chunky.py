@@ -236,7 +236,7 @@ class Sparse:
         self.origin = origin
         self.spacing = spacing
         self._block_shape = tuple(
-            np.ceil(np.divide(self.shape, self.chunks)).astype(np.int_)
+            np.ceil(np.divide(self.shape, self.chunks)).astype(np.int32)
         )
         self._grid = dict()
 
@@ -365,9 +365,9 @@ class Sparse:
         if isinstance(val, int):
             val = tuple([val] * 3)
         elif isinstance(val, np.ndarray) and len(val) == 3:
-            val = tuple(val.astype(np.int))
+            val = tuple(val.astype(np.int32))
         elif isinstance(val, tuple) and len(val) == 3:
-            val = tuple(np.array(val, dtype=np.int))
+            val = tuple(np.array(val, dtype=np.int32))
         else:
             raise ValueError("invalid shape specified")
 
@@ -888,7 +888,7 @@ class Sparse:
         """
         s = np.array(start)
         e = np.array(end)
-        d = np.ceil(np.divide(e - s, step)).astype(np.int_)
+        d = np.ceil(np.divide(e - s, step)).astype(np.int32)
         ret = np.empty(d, dtype=self.dtype)
 
         def process(idx, gs, z, y, x, _):
@@ -930,7 +930,7 @@ class Sparse:
         )
 
         gs = s.copy()
-        idx = np.zeros(3, dtype=np.int_)
+        idx = np.zeros(3, dtype=np.int32)
         ids = None
         ls_c, ls, le_c, le = None, None, None, None
 
@@ -1154,10 +1154,10 @@ class Sparse:
             dtype = self.dtype
         ret = []
         for k in self._grid.keys():
-            coord = np.array(k, dtype=np.int) * self._chunk_shape
+            coord = np.array(k, dtype=np.int32) * self._chunk_shape
             mask = (coord + self._chunk_shape) > self._shape
             end = self._chunk_shape - np.multiply(
-                coord + self._chunk_shape - self._shape, mask.astype(np.int)
+                coord + self._chunk_shape - self._shape, mask.astype(np.int32)
             )
             ret.append(
                 {
