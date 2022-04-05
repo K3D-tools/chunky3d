@@ -143,7 +143,7 @@ class TestImage(unittest.TestCase):
         two_chunks = s.__sizeof__()
 
         self.assertAlmostEqual(
-            two_chunks - single_chunk, single_chunk - empty_memory, delta=32
+            two_chunks - single_chunk, single_chunk - empty_memory, delta=200
         )
 
         s.make_dense_data()
@@ -262,7 +262,6 @@ class TestInterpolation(unittest.TestCase):
 class TestProperties(unittest.TestCase):
     def test_unsigned_shape(self):
         s = Sparse(tuple(np.arange(2, 5, dtype=np.uint8)))
-        print(s.shape)
         self.assertTrue(np.all(-np.array(s.shape) < 0))  # unsinged would be > 0
 
     def test_negative_shape(self):

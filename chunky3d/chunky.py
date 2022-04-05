@@ -365,9 +365,9 @@ class Sparse:
         if isinstance(val, int):
             val = tuple([val] * 3)
         elif isinstance(val, np.ndarray) and len(val) == 3:
-            val = tuple(val.astype(np.uint))
+            val = tuple(val.astype(np.int_))
         elif isinstance(val, tuple) and len(val) == 3:
-            val = tuple(np.array(val, dtype=np.uint))
+            val = tuple(np.array(val, dtype=np.int_))
         else:
             raise ValueError("invalid shape specified")
 
