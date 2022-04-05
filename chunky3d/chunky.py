@@ -365,9 +365,9 @@ class Sparse:
         if isinstance(val, int):
             val = tuple([val] * 3)
         elif isinstance(val, np.ndarray) and len(val) == 3:
-            val = tuple(val.astype(np.int))
+            val = tuple(val.astype(np.uint))
         elif isinstance(val, tuple) and len(val) == 3:
-            val = tuple(np.array(val, dtype=np.int))
+            val = tuple(np.array(val, dtype=np.uint))
         else:
             raise ValueError("invalid shape specified")
 
@@ -1154,10 +1154,10 @@ class Sparse:
             dtype = self.dtype
         ret = []
         for k in self._grid.keys():
-            coord = np.array(k, dtype=np.int) * self._chunk_shape
+            coord = np.array(k, dtype=np.int_) * self._chunk_shape
             mask = (coord + self._chunk_shape) > self._shape
             end = self._chunk_shape - np.multiply(
-                coord + self._chunk_shape - self._shape, mask.astype(np.int)
+                coord + self._chunk_shape - self._shape, mask.astype(np.int_)
             )
             ret.append(
                 {
