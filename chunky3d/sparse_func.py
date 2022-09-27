@@ -183,6 +183,9 @@ def where(sparse, func):
         ret_j.append(j + offset[1])
         ret_k.append(k + offset[2])
 
+    if len(ret_i) == 0:
+        return tuple(np.empty((0,), dtype=np.intp) for _ in range(3))
+
     return np.hstack(ret_i), np.hstack(ret_j), np.hstack(ret_k)
 
 
