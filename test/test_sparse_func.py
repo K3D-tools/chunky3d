@@ -11,6 +11,9 @@ from chunky3d.sparse_func import (
     thinning,
     to_indices_value,
     unique,
+    where,
+    _have_itk,
+    _have_itk_thickness,
     _have_nx,
     _have_sitk,
     _have_vtk,
@@ -83,6 +86,20 @@ class TestFunctions(unittest.TestCase):
         sp[0, 2, 1] = 2
         sp[4, 3, 5] = 4
         self.assertSetEqual(unique(sp), {0, 2, 4})
+
+    def test_where_with_values(self):
+        sp = Sparse(shape=(10, 10, 10), chunks=4)
+        sp[0, 2, 1] = 1
+        sp[5, 5, 5] = 2
+        sp[7, 1, 9] = 3
+        result = where(sp, lambda x: x > 1)
+        expected = np.array([5, 7]), np.array([1, 5]), np.array([5, 9])
+        np.testing.assert_array_equal(np.sort(result, axis=1), expected)
+
+    def test_where_empty(self):
+        sp = Sparse(shape=(10, 10, 10), chunks=4)
+        result = where(sp, lambda x: x > 1)
+        np.testing.assert_array_equal(result, np.empty((3, 0), dtype=np.intp))
 
     def test_mul_scalar(self):
         sp = Sparse(shape=(4, 4, 4), chunks=2)
