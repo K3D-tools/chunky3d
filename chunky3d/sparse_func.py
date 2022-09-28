@@ -259,19 +259,34 @@ def min_slice(sparse, z, y, x):
 
 
 def mul(sparse_a, sparse_b):
-    return sparse_a.run_multivariate(lambda a, b: a * b[0], [sparse_b])
+    sparse_a.run_multivariate(lambda a, b: a * b[0], [sparse_b])
 
 
 def add(sparse_a, sparse_b):
-    return sparse_a.run_multivariate(lambda a, b: a + b[0], [sparse_b])
+    sparse_a.run_multivariate(lambda a, b: a + b[0], [sparse_b])
 
 
 def subtract(sparse_a, sparse_b):
-    return sparse_a.run_multivariate(lambda a, b: a - b[0], [sparse_b])
+    sparse_a.run_multivariate(lambda a, b: a - b[0], [sparse_b])
 
 
 def add_scalar(sparse_a, val, multiprocesses=1):
     sparse_a.run(lambda data, prev: (data + val, prev), multiprocesses=multiprocesses)
+
+
+def mul_scalar(sparse_a, val, multiprocesses=1):
+    sparse_a.run(lambda data, prev: (data * val, prev), multiprocesses=multiprocesses)
+
+
+def any(sparse: Sparse, func=None) -> bool:
+    if func is None:
+        func = lambda data: data
+
+    for key in sparse._grid.keys():
+        if func(sparse.get_chunk(key)).any():
+            return True
+
+    return False
 
 
 def dilate(sparse, kernel_radius, foreground_value=1, multiprocesses=1):

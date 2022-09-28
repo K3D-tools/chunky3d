@@ -1329,3 +1329,8 @@ class Sparse:
         }
 
         return s
+
+    def astype(self, dtype):
+        new_sparse = Sparse.empty_like(self, fill_value=dtype(self.fill_value), dtype=dtype)
+        new_sparse.copy_from(self)
+        return new_sparse

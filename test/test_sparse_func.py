@@ -7,6 +7,7 @@ from chunky3d.sparse_func import (
     contour,
     dilate,
     label,
+    mul_scalar,
     thinning,
     to_indices_value,
     unique,
@@ -84,6 +85,44 @@ class TestFunctions(unittest.TestCase):
         sp[0, 2, 1] = 2
         sp[4, 3, 5] = 4
         self.assertSetEqual(unique(sp), {0, 2, 4})
+
+    def test_mul_scalar(self):
+        sp = Sparse(shape=(4, 4, 4), chunks=2)
+        sp[0, 0, 0] = 1
+        sp[3, 3, 3] = 2
+
+        mul_scalar(sp, 3)
+
+        self.assertEqual(sp[0, 0, 0], 3)
+        self.assertEqual(sp[3, 3, 3], 6)
+        self.assertEqual(sp[1, 1, 1], 0)
+
+    def test_any_no_func(self):
+        sp = Sparse(shape=(4, 4, 4), chunks=2)
+        sp[0, 0, 0] = 0
+        
+        with self.subTest("empty"):
+            result_empty = sf.any(sp)
+            self.assertFalse(result_empty)
+
+        with self.subTest("not empty"):
+            sp[3, 3, 3] = 2
+            result_not_empty = sf.any(sp)
+            self.assertTrue(result_not_empty)
+
+    def test_any_with_func(self):
+        sp = Sparse(shape=(4, 4, 4), chunks=2)
+        sp[0, 0, 0] = 1
+        sp[3, 3, 3] = 2
+        
+        with self.subTest("empty"):
+            result_empty = sf.any(sp, lambda x: x > 2)
+            self.assertFalse(result_empty)
+
+        with self.subTest("not empty"):
+            result_not_empty = sf.any(sp, lambda x: x > 1)
+            self.assertTrue(result_not_empty)
+
 
     @unittest.skipUnless(
         _have_sitk and _have_nx, "this test needs SimpleITK and NetworkX"
