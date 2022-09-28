@@ -11,8 +11,6 @@ from chunky3d.sparse_func import (
     thinning,
     to_indices_value,
     unique,
-    _have_itk,
-    _have_itk_thickness,
     _have_nx,
     _have_sitk,
     _have_vtk,
@@ -154,11 +152,8 @@ class TestFunctions(unittest.TestCase):
         np.testing.assert_array_equal(s[2:5, 2:5, 2:5], expected)
         self.assertEqual(sf.sum(s), 3 ** 3 - 8)
 
-    @unittest.skipUnless(
-        _have_itk and _have_itk_thickness, "this test needs ITK and itk-thickness3d"
-    )
     def test_thinning(self):
-        s = Sparse((5, 5, 5), dtype=np.uint16)
+        s = Sparse((5, 5, 5), dtype=np.uint8)
         s[...] = 1
         s[2, 2] = 0
         expected_slice = np.array(
