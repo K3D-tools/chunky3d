@@ -156,6 +156,30 @@ class TestImage(unittest.TestCase):
         mask_size = np.zeros(s._block_shape, dtype=np.int32).__sizeof__()
         after_grid_mask = s.__sizeof__()
         self.assertEqual(after_grid_mask, defragmented + mask_size - None.__sizeof__())
+    
+    def test_astype(self):
+        grid_shape = (4, 4, 4)
+        chunk_shape = 4
+        orig_type = np.uint8
+        orig_fill_value = 2
+        shape = np.multiply(grid_shape, chunk_shape)
+        orig_sparse = Sparse(shape=shape, chunks=chunk_shape, fill_value=orig_fill_value, dtype=orig_type)
+        target_type = np.float64
+
+        new_sparse = orig_sparse.astype(target_type)
+
+        self.assertEqual(orig_sparse.dtype, orig_type)
+        self.assertEqual(new_sparse.dtype, target_type)
+        self.assertEqual(new_sparse.fill_value, np.float64(orig_fill_value))
+        self.assertEqual(new_sparse.chunks, orig_sparse.chunks)
+        self.assertSequenceEqual(new_sparse.shape, orig_sparse.shape)
+        self.assertSequenceEqual(new_sparse.origin, orig_sparse.origin)
+        self.assertSequenceEqual(new_sparse.spacing, orig_sparse.spacing)
+
+        for i in range(grid_shape[0]):
+            for j in range(grid_shape[1]):
+                for k in range(grid_shape[2]):
+                    self.assertEqual(new_sparse.get_chunk((i, j, k)).dtype, target_type)
 
 
 class TestBroadcasting(unittest.TestCase):

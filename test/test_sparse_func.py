@@ -7,6 +7,7 @@ from chunky3d.sparse_func import (
     contour,
     dilate,
     label,
+    mul_scalar,
     thinning,
     to_indices_value,
     unique,
@@ -100,6 +101,44 @@ class TestFunctions(unittest.TestCase):
         result = where(sp, lambda x: x > 1)
         np.testing.assert_array_equal(result, np.empty((3, 0), dtype=np.intp))
 
+    def test_mul_scalar(self):
+        sp = Sparse(shape=(4, 4, 4), chunks=2)
+        sp[0, 0, 0] = 1
+        sp[3, 3, 3] = 2
+
+        mul_scalar(sp, 3)
+
+        self.assertEqual(sp[0, 0, 0], 3)
+        self.assertEqual(sp[3, 3, 3], 6)
+        self.assertEqual(sp[1, 1, 1], 0)
+
+    def test_any_no_func(self):
+        sp = Sparse(shape=(4, 4, 4), chunks=2)
+        sp[0, 0, 0] = 0
+        
+        with self.subTest("empty"):
+            result_empty = sf.any(sp)
+            self.assertFalse(result_empty)
+
+        with self.subTest("not empty"):
+            sp[3, 3, 3] = 2
+            result_not_empty = sf.any(sp)
+            self.assertTrue(result_not_empty)
+
+    def test_any_with_func(self):
+        sp = Sparse(shape=(4, 4, 4), chunks=2)
+        sp[0, 0, 0] = 1
+        sp[3, 3, 3] = 2
+        
+        with self.subTest("empty"):
+            result_empty = sf.any(sp, lambda x: x > 2)
+            self.assertFalse(result_empty)
+
+        with self.subTest("not empty"):
+            result_not_empty = sf.any(sp, lambda x: x > 1)
+            self.assertTrue(result_not_empty)
+
+
     @unittest.skipUnless(
         _have_sitk and _have_nx, "this test needs SimpleITK and NetworkX"
     )
@@ -130,11 +169,8 @@ class TestFunctions(unittest.TestCase):
         np.testing.assert_array_equal(s[2:5, 2:5, 2:5], expected)
         self.assertEqual(sf.sum(s), 3 ** 3 - 8)
 
-    @unittest.skipUnless(
-        _have_itk and _have_itk_thickness, "this test needs ITK and itk-thickness3d"
-    )
     def test_thinning(self):
-        s = Sparse((5, 5, 5), dtype=np.uint16)
+        s = Sparse((5, 5, 5), dtype=np.uint8)
         s[...] = 1
         s[2, 2] = 0
         expected_slice = np.array(

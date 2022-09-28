@@ -3,20 +3,12 @@ import warnings
 from collections import Counter
 
 import numpy as np
+from skimage.morphology import skeletonize_3d
 
 from .helpers import slice_normalize, min_dtype, max_dtype
 from .chunky import Sparse
 
 # optional imports
-
-try:
-    import itk
-
-    _have_itk = True
-    _have_itk_thickness = hasattr(itk, "BinaryThinningImageFilter3D")
-except ImportError:
-    _have_itk = False
-    _have_itk_thickness = False
 
 try:
     import networkx as nx
@@ -38,6 +30,39 @@ try:
     _have_vtk = True
 except ImportError:
     _have_vtk = False
+
+
+itk = None
+_have_itk = False
+_have_itk_thickness = False
+
+
+def _try_import_itk_thickness(import_error=True):
+    """Enables to import itk and itk-thickness3d on demand as it takes a long time (ca. 15s)"""
+    global itk
+    global _have_itk
+    global _have_itk_thickness
+
+    if _have_itk and _have_itk_thickness:
+        return
+
+    try:
+        import itk
+
+        _have_itk = True
+        _have_itk_thickness = hasattr(itk, "BinaryThinningImageFilter3D")
+    except ImportError:
+        _have_itk = False
+        _have_itk_thickness = False
+    
+    if not import_error:
+        return
+
+    if not _have_itk:
+        raise ImportError("Please install ITK to use this function.")
+
+    if not _have_itk_thickness:
+        raise ImportError("Please install itk-thickness3d to use this function.")
 
 
 def _unique_pairs(a):
@@ -262,19 +287,34 @@ def min_slice(sparse, z, y, x):
 
 
 def mul(sparse_a, sparse_b):
-    return sparse_a.run_multivariate(lambda a, b: a * b[0], [sparse_b])
+    sparse_a.run_multivariate(lambda a, b: a * b[0], [sparse_b])
 
 
 def add(sparse_a, sparse_b):
-    return sparse_a.run_multivariate(lambda a, b: a + b[0], [sparse_b])
+    sparse_a.run_multivariate(lambda a, b: a + b[0], [sparse_b])
 
 
 def subtract(sparse_a, sparse_b):
-    return sparse_a.run_multivariate(lambda a, b: a - b[0], [sparse_b])
+    sparse_a.run_multivariate(lambda a, b: a - b[0], [sparse_b])
 
 
 def add_scalar(sparse_a, val, multiprocesses=1):
     sparse_a.run(lambda data, prev: (data + val, prev), multiprocesses=multiprocesses)
+
+
+def mul_scalar(sparse_a, val, multiprocesses=1):
+    sparse_a.run(lambda data, prev: (data * val, prev), multiprocesses=multiprocesses)
+
+
+def any(sparse: Sparse, func=None) -> bool:
+    if func is None:
+        func = lambda data: data
+
+    for key in sparse._grid.keys():
+        if func(sparse.get_chunk(key)).any():
+            return True
+
+    return False
 
 
 def dilate(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
@@ -370,19 +410,10 @@ def opening(sparse, kernel_radius, foreground_value=1, multiprocesses=1):
 
 
 def thinning(sparse, envelope, multiprocesses=1):
-    """1 pixel-thin wire skeletonization
-
-    This function requires: ITK"""
-    if not _have_itk:
-        raise ImportError("Please install ITK to use this function.")
-    if not _have_itk_thickness:
-        raise ImportError("Please install itk-thickness3d to use this function.")
-
+    """1 pixel-thin wire skeletonization"""
     sparse.run(
         lambda data, prev: (
-            itk.GetArrayFromImage(
-                itk.BinaryThinningImageFilter3D.New(itk.GetImageFromArray(data))
-            ),
+            (skeletonize_3d(data) > 0).astype(data.dtype),
             prev,
         ),
         envelope=envelope,
@@ -396,10 +427,7 @@ def thinning_diameter(sparse, envelope, multiprocesses=2):
     (i.e. diameter of the local maximal fitting sphere)
 
     This function requires: ITK"""
-    if not _have_itk:
-        raise ImportError("Please install ITK to use this function.")
-    if not _have_itk_thickness:
-        raise ImportError("Please install itk-thickness3d to use this function.")
+    _try_import_itk_thickness()
 
     if multiprocesses == 1:
         warnings.warn(
