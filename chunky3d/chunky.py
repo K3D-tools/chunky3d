@@ -27,7 +27,7 @@ def fast_get(
 
     shp = grid_mask.shape
 
-    if bi > shp[0] or bj > shp[1] or bk > shp[2]:
+    if bi >= shp[0] or bj >= shp[1] or bk >= shp[2]:
         return error_value
 
     idx = grid_mask[bi, bj, bk]
