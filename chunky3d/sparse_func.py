@@ -293,10 +293,12 @@ def mul(sparse_a: Sparse, sparse_b: Sparse):
 
 def add(sparse_a, sparse_b):
     sparse_a.run_multivariate(lambda a, b: a + b[0], [sparse_b])
+    sparse_a.fill_value = sparse_a.fill_value + sparse_b.fill_value    
 
 
 def subtract(sparse_a, sparse_b):
     sparse_a.run_multivariate(lambda a, b: a - b[0], [sparse_b])
+    sparse_a.fill_value = sparse_a.fill_value - sparse_b.fill_value
 
 
 def add_scalar(sparse_a, val, multiprocesses=1):

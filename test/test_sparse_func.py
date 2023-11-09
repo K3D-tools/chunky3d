@@ -111,6 +111,43 @@ class TestFunctions(unittest.TestCase):
         assert sp1[3, 0, 0] == 0
         npt.assert_array_equal(sp1[:,:,:], sp_exp[:,:,:])
 
+    def test_add_fill_hybrid(self):
+        sp2 = Sparse(shape=(4, 4, 4), chunks=2, fill_value=2)
+        sp2[0, 0, 0] = 1        
+        sp2[3, 3, 3] = 3
+
+        sp1 = Sparse(shape=(4, 4, 4), chunks=2, fill_value=1)
+        sp1[0, 0, 0] = 0
+        sp1[3, 0, 0] = 2
+        sp1[3, 3, 3] = 3
+
+        sp_exp = Sparse(shape=(4, 4, 4), chunks=2, fill_value=3)
+        sp_exp[0, 0, 0] = 1
+        sp_exp[3, 0, 0] = 4
+        sp_exp[3, 3, 3] = 6
+
+        sf.add(sp1, sp2)
+        npt.assert_array_equal(sp1[:,:,:], sp_exp[:,:,:])
+
+    
+    def test_subtract_fill_hybrid(self):
+        sp2 = Sparse(shape=(4, 4, 4), chunks=2, fill_value=2)
+        sp2[0, 0, 0] = 3        
+        sp2[3, 3, 3] = 4
+
+        sp1 = Sparse(shape=(4, 4, 4), chunks=2, fill_value=1)
+        sp1[0, 0, 0] = 0
+        sp1[3, 0, 0] = 2
+        sp1[3, 3, 3] = 3
+
+        sp_exp = Sparse(shape=(4, 4, 4), chunks=2, fill_value=-1)
+        sp_exp[0, 0, 0] = -3
+        sp_exp[3, 0, 0] = 0
+        sp_exp[3, 3, 3] = -1
+
+        sf.subtract(sp1, sp2)
+        npt.assert_array_equal(sp1[:,:,:], sp_exp[:,:,:])
+
 
     def test_max(self):
         sp = Sparse(shape=(10, 10, 10))
