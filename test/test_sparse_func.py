@@ -92,6 +92,26 @@ class TestFunctions(unittest.TestCase):
         npt.assert_array_equal(sp1[:,:,:], sp_exp[:,:,:])
 
 
+    def test_mul_fill_hybrid(self):
+        sp0 = Sparse(shape=(4, 4, 4), chunks=2, fill_value=0)
+        sp0[0, 0, 0] = 1        
+        sp0[3, 3, 3] = 2
+
+        sp1 = Sparse(shape=(4, 4, 4), chunks=2, fill_value=1)
+        sp1[0, 0, 0] = 1
+        sp1[3, 0, 0] = 2
+        sp1[3, 3, 3] = 2
+
+        sp_exp = Sparse(shape=(4, 4, 4), chunks=2, fill_value=0)
+        sp_exp[0, 0, 0] = 1
+        sp_exp[3, 0, 0] = 0
+        sp_exp[3, 3, 3] = 4
+
+        sf.mul(sp1, sp0)
+        assert sp1[3, 0, 0] == 0
+        npt.assert_array_equal(sp1[:,:,:], sp_exp[:,:,:])
+
+
     def test_max(self):
         sp = Sparse(shape=(10, 10, 10))
         sp[0, 2, 1] = 2

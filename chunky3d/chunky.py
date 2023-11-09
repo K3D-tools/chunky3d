@@ -618,7 +618,7 @@ class Sparse:
                 self._grid[idx] = d
 
     def run_multivariate(self, func, sparse_list, *args):
-        keys = set()
+        keys = self._grid.keys()
 
         for s in sparse_list:
             keys = keys | set(s._grid.keys())
