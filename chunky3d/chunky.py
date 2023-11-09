@@ -417,6 +417,10 @@ class Sparse:
     def fill_value(self):
         """ A value used for uninitialized (empty) portions of the array. """
         return self._default_value
+    
+    @fill_value.setter
+    def fill_value(self, fill_value):
+        self._default_value = fill_value
 
     @property
     def nchunks(self):
