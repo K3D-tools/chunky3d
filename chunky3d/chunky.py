@@ -417,6 +417,10 @@ class Sparse:
     def fill_value(self):
         """ A value used for uninitialized (empty) portions of the array. """
         return self._default_value
+    
+    @fill_value.setter
+    def fill_value(self, fill_value):
+        self._default_value = fill_value
 
     @property
     def nchunks(self):
@@ -614,7 +618,7 @@ class Sparse:
                 self._grid[idx] = d
 
     def run_multivariate(self, func, sparse_list, *args):
-        keys = set()
+        keys = self._grid.keys()
 
         for s in sparse_list:
             keys = keys | set(s._grid.keys())

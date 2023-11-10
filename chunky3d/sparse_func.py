@@ -286,16 +286,19 @@ def min_slice(sparse, z, y, x):
     )
 
 
-def mul(sparse_a, sparse_b):
+def mul(sparse_a: Sparse, sparse_b: Sparse):
     sparse_a.run_multivariate(lambda a, b: a * b[0], [sparse_b])
+    sparse_a.fill_value = sparse_a.fill_value * sparse_b.fill_value
 
 
 def add(sparse_a, sparse_b):
     sparse_a.run_multivariate(lambda a, b: a + b[0], [sparse_b])
+    sparse_a.fill_value = sparse_a.fill_value + sparse_b.fill_value    
 
 
 def subtract(sparse_a, sparse_b):
     sparse_a.run_multivariate(lambda a, b: a - b[0], [sparse_b])
+    sparse_a.fill_value = sparse_a.fill_value - sparse_b.fill_value
 
 
 def add_scalar(sparse_a, val, multiprocesses=1):
