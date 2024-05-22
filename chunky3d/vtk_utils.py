@@ -510,7 +510,7 @@ def vtp_from_verts_faces(verts, faces):
     return poly
 
 
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 from skimage.measure import marching_cubes
 
 
