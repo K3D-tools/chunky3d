@@ -134,7 +134,7 @@ def sum(sparse, multiprocesses=1):
             prev=0,
             multiprocesses=multiprocesses,
         )
-    )
+    ) + (sparse.nchunks - sparse.nchunks_initialized) * np.prod(sparse.chunks) * sparse.fill_value
 
 
 def downsample(sparse, stride=(3, 3, 3)):
@@ -303,10 +303,12 @@ def subtract(sparse_a, sparse_b):
 
 def add_scalar(sparse_a, val, multiprocesses=1):
     sparse_a.run(lambda data, prev: (data + val, prev), multiprocesses=multiprocesses)
+    sparse_a.fill_value = sparse_a.fill_value + val
 
 
 def mul_scalar(sparse_a, val, multiprocesses=1):
     sparse_a.run(lambda data, prev: (data * val, prev), multiprocesses=multiprocesses)
+    sparse_a.fill_value = sparse_a.fill_value * val
 
 
 def any(sparse: Sparse, func=None) -> bool:

@@ -149,6 +149,26 @@ class TestFunctions(unittest.TestCase):
         npt.assert_array_equal(sp1[:,:,:], sp_exp[:,:,:])
 
 
+    def test_add_scalar(self):
+        sp0 = Sparse(shape=(4, 4, 4), chunks=(2,2,2), fill_value=0)
+        sp0[0, 0, 0] = 1
+        sf.add_scalar(sp0, 1)
+        
+        self.assertEqual(sp0.fill_value, 1)
+        self.assertEqual(sp0[0,0,0], 2)
+        self.assertEqual(sf.sum(sp0), 4**3 + 1)
+
+    def test_mul_scalar(self):
+        sp0 = Sparse(shape=(4, 4, 4), chunks=(2,2,2), fill_value=0)
+        sp0[0, 0, 0] = 1
+        sf.add_scalar(sp0, 1)
+        sf.mul_scalar(sp0, 2)
+        
+        self.assertEqual(sp0.fill_value, 2)
+        self.assertEqual(sp0[0,0,0], 4)
+        self.assertEqual(sf.sum(sp0), 2 * (4**3 + 1))
+
+
     def test_max(self):
         sp = Sparse(shape=(10, 10, 10))
         sp[0, 2, 1] = 2
@@ -189,17 +209,6 @@ class TestFunctions(unittest.TestCase):
         sp = Sparse(shape=(10, 10, 10), chunks=4)
         result = where(sp, lambda x: x > 1)
         np.testing.assert_array_equal(result, np.empty((3, 0), dtype=np.intp))
-
-    def test_mul_scalar(self):
-        sp = Sparse(shape=(4, 4, 4), chunks=2)
-        sp[0, 0, 0] = 1
-        sp[3, 3, 3] = 2
-
-        mul_scalar(sp, 3)
-
-        self.assertEqual(sp[0, 0, 0], 3)
-        self.assertEqual(sp[3, 3, 3], 6)
-        self.assertEqual(sp[1, 1, 1], 0)
 
     def test_any_no_func(self):
         sp = Sparse(shape=(4, 4, 4), chunks=2)
