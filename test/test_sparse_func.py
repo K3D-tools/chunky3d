@@ -241,13 +241,21 @@ class TestFunctions(unittest.TestCase):
         _have_sitk and _have_nx, "this test needs SimpleITK and NetworkX"
     )
     def test_label(self):
-        s = Sparse((30, 30, 30), dtype=np.uint32)
+        s = Sparse((30, 30, 30), chunks=2, dtype=np.uint32)
         s[2:5, 2:5, 2:5] = 1
         s[7:9, 7:9, 7:9] = 1
         s[15:18, 15:18, 15:18] = 1
         s[25:28, 25:28, 25:28] = 1
         label(s)
+        
         self.assertSetEqual(unique(s), set(range(5)))
+        de_facto_indices = [s[2,2,2], s[7,7,7], s[15,15,15], s[25,25,25]]
+        self.assertSetEqual(set(de_facto_indices), set(range(1,5)))
+        np.testing.assert_array_equal(s[2:5, 2:5, 2:5], de_facto_indices[0])
+        np.testing.assert_array_equal(s[7:9, 7:9, 7:9], de_facto_indices[1])
+        np.testing.assert_array_equal(s[15:18, 15:18, 15:18], de_facto_indices[2])
+        np.testing.assert_array_equal(s[25:28, 25:28, 25:28], de_facto_indices[3])
+        self.assertEqual(s.fill_value, 0)
 
     @unittest.skipUnless(_have_sitk, "this test needs SimpleITK")
     def test_dilate(self):
