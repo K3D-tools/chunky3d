@@ -32,7 +32,7 @@ def fast_get(
 
     idx = grid_mask[bi, bj, bk]
 
-    if idx != 0xFFFFFFFF:
+    if idx != Sparse.EMPTY_GRID_VALUE:
         return dense_data[
             envelope + idx * (chunks[0] + 2 * envelope) + li,
             envelope + lj,
@@ -211,6 +211,8 @@ class Sparse:
         set: insert dense submatrix into structure
         get_k3d_voxels_group_dict: get chunks as list of dict for use in K3D voxels group
     """
+
+    EMPTY_GRID_VALUE = 0xFFFFFFFF
 
     def __init__(
         self,
@@ -417,7 +419,7 @@ class Sparse:
     def fill_value(self):
         """ A value used for uninitialized (empty) portions of the array. """
         return self._default_value
-    
+
     @fill_value.setter
     def fill_value(self, fill_value):
         self._default_value = fill_value
@@ -495,12 +497,14 @@ class Sparse:
             type(self._grid_mask) is not np.ndarray
             or self._grid_mask.shape != self._block_shape
         ):
-            self._grid_mask = np.full(self._block_shape, 0xFFFFFFFF, dtype=np.uint32)
+            self._grid_mask = np.full(
+                self._block_shape, Sparse.EMPTY_GRID_VALUE, dtype=np.uint32
+            )
         else:
-            self._grid_mask.fill(0xFFFFFFFF)
+            self._grid_mask.fill(Sparse.EMPTY_GRID_VALUE)
 
-        self._grid_mask[tuple(np.array(sorted(self._grid.keys())).T)] = np.arange(
-            self.nchunks_initialized
+        self._grid_mask[tuple(np.array(sorted(self._grid.keys())).T)] = (
+            np.arange(self.nchunks_initialized)
         )
 
     def get_chunk(self, idx, dtype=None):
