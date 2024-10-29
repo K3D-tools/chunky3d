@@ -503,8 +503,8 @@ class Sparse:
         else:
             self._grid_mask.fill(Sparse.EMPTY_GRID_VALUE)
 
-        self._grid_mask[tuple(np.array(sorted(self._grid.keys())).T)] = (
-            np.arange(self.nchunks_initialized)
+        self._grid_mask[tuple(np.array(sorted(self._grid.keys())).T)] = np.arange(
+            self.nchunks_initialized
         )
 
     def get_chunk(self, idx, dtype=None):
@@ -571,7 +571,7 @@ class Sparse:
         else:
             self._grid[idx][:] = d
 
-    def _update_grid(self):
+    def _update_grid(self, envelope: int = 0):
         """In case the underlying `_memory_blocks` and `_grid_mask` change, this method updates the `_grid`."""
         chunks = self.chunks
         grid = {}
@@ -589,6 +589,7 @@ class Sparse:
                 ],
                 idx,
             )
+
         self._grid = grid
 
     def set_chunk(self, idx, val):
