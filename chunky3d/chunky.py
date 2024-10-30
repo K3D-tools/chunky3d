@@ -571,8 +571,11 @@ class Sparse:
         else:
             self._grid[idx][:] = d
 
-    def _update_grid(self, envelope: int = 0):
-        """In case the underlying `_memory_blocks` and `_grid_mask` change, this method updates the `_grid`."""
+    def update_grid(self, envelope: int = 0):
+        """In case the underlying `_memory_blocks` and `_grid_mask` change, this method updates the `_grid`.
+
+        WARNING: the underlying `dense_data` has to be continuous, use at your own discretion!
+        """
         chunks = self.chunks
         grid = {}
         for i, j, k in np.argwhere(self.grid_mask != Sparse.EMPTY_GRID_VALUE):
