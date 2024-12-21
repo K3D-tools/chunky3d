@@ -1,9 +1,11 @@
-from chunky3d import Sparse, point_probe
-
-import unittest
 import os
+import pickle
+import tempfile
+import unittest
 
 import numpy as np
+
+from chunky3d import Sparse, point_probe
 
 
 class TestImage(unittest.TestCase):
@@ -156,14 +158,16 @@ class TestImage(unittest.TestCase):
         mask_size = np.zeros(s._block_shape, dtype=np.int32).__sizeof__()
         after_grid_mask = s.__sizeof__()
         self.assertEqual(after_grid_mask, defragmented + mask_size - None.__sizeof__())
-    
+
     def test_astype(self):
         grid_shape = (4, 4, 4)
         chunk_shape = 4
         orig_type = np.uint8
         orig_fill_value = 2
         shape = np.multiply(grid_shape, chunk_shape)
-        orig_sparse = Sparse(shape=shape, chunks=chunk_shape, fill_value=orig_fill_value, dtype=orig_type)
+        orig_sparse = Sparse(
+            shape=shape, chunks=chunk_shape, fill_value=orig_fill_value, dtype=orig_type
+        )
         target_type = np.float64
 
         new_sparse = orig_sparse.astype(target_type)
@@ -294,6 +298,30 @@ class TestProperties(unittest.TestCase):
         self.assertTrue(
             str(cm.exception).startswith("all dimensions of shape must be positive")
         )
+
+
+class TestPickle(unittest.TestCase):
+    def test_pickle(self):
+        s = Sparse(shape=(10, 10, 10))
+        s.set((1, 1, 1), np.array([[[20]]]))
+        s.save("/tmp/tmp.sparse")
+        with open("/tmp/tmp.sparse.pickle", "wb") as f:
+            pickle.dump(s, f)
+        with open("/tmp/tmp.sparse.pickle", "rb") as f:
+            sparse_loaded = pickle.load(f)
+            sparse_loaded.save("/tmp/tmp.sparse")
+
+    def test_dill(self):
+        import dill
+
+        s = Sparse(shape=(10, 10, 10))
+        s.set((1, 1, 1), np.array([[[20]]]))
+        s.save("/tmp/tmp.sparse")
+        with open("/tmp/tmp.sparse.dill", "wb") as f:
+            dill.dump(s, f)
+        with open("/tmp/tmp.sparse.dill", "rb") as f:
+            sparse_loaded = dill.load(f)
+            sparse_loaded.save("/tmp/tmp.sparse")
 
 
 if __name__ == "__main__":
