@@ -580,7 +580,6 @@ class Sparse:
         grid = {}
         for i, j, k in np.argwhere(self.grid_mask != Sparse.EMPTY_GRID_VALUE):
             idx = self._grid_mask[i, j, k]
-            envelope = 0
             grid[(i, j, k)] = self._make_chunk(
                 self.dense_data[
                     envelope
