@@ -2,6 +2,7 @@ dill
 msgpack
 msgpack_numpy
 numba
+numpy
 psutil
 scipy
 scikit-image

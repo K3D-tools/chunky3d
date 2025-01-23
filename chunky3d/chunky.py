@@ -13,10 +13,19 @@ from .chunk import Chunk
 from .helpers import slice_normalize, slice_shape, check_start_end
 from .multiprocesses import ProcessPool
 
+EMPTY_GRID_VALUE: np.uint32 = 0xFFFFFFFF
+
 
 @njit
 def fast_get(
-    ijk, dense_data, grid_mask, chunks, envelope=0, fill_value=0.0, error_value=0.0
+    ijk,
+    dense_data,
+    grid_mask,
+    chunks,
+    envelope=0,
+    fill_value=0.0,
+    error_value=0.0,
+    # empty_idx_value=EMPTY_GRID_VALUE,
 ):
     if ijk[0] < 0 or ijk[1] < 0 or ijk[2] < 0:
         return error_value
@@ -32,7 +41,7 @@ def fast_get(
 
     idx = grid_mask[bi, bj, bk]
 
-    if idx != Sparse.EMPTY_GRID_VALUE:
+    if idx != EMPTY_GRID_VALUE:
         return dense_data[
             envelope + idx * (chunks[0] + 2 * envelope) + li,
             envelope + lj,
@@ -212,7 +221,7 @@ class Sparse:
         get_k3d_voxels_group_dict: get chunks as list of dict for use in K3D voxels group
     """
 
-    EMPTY_GRID_VALUE = 0xFFFFFFFF
+    EMPTY_GRID_VALUE = EMPTY_GRID_VALUE
 
     def __init__(
         self,
@@ -350,7 +359,7 @@ class Sparse:
 
     @property
     def dtype(self):
-        """ The NumPy data type. """
+        """The NumPy data type."""
         return self._dtype
 
     @dtype.setter
@@ -380,7 +389,7 @@ class Sparse:
 
     @property
     def size(self):
-        return np.product(self._shape)
+        return np.prod(self._shape)
 
     @property
     def itemsize(self):
@@ -388,7 +397,7 @@ class Sparse:
 
     @property
     def chunks(self):
-        """ A tuple of integers describing the length of each dimension of a chunk of the array. """
+        """A tuple of integers describing the length of each dimension of a chunk of the array."""
         return self._chunk_shape
 
     @chunks.setter
@@ -412,12 +421,12 @@ class Sparse:
 
     @property
     def cdata_shape(self):
-        """ A tuple of integers describing the number of chunks along each dimension of the array. """
+        """A tuple of integers describing the number of chunks along each dimension of the array."""
         return self._block_shape
 
     @property
     def fill_value(self):
-        """ A value used for uninitialized (empty) portions of the array. """
+        """A value used for uninitialized (empty) portions of the array."""
         return self._default_value
 
     @fill_value.setter
@@ -426,22 +435,22 @@ class Sparse:
 
     @property
     def nchunks(self):
-        """ Total number of chunks. """
+        """Total number of chunks."""
         return np.prod(self.cdata_shape)
 
     @property
     def nchunks_initialized(self):
-        """ The number of chunks that have been initialized with some data. """
+        """The number of chunks that have been initialized with some data."""
         return len(self._grid)
 
     @property
     def kchunks_initialized(self):
-        """ List of keys of chunks that have been initialized with some data. """
+        """List of keys of chunks that have been initialized with some data."""
         return set(self._grid.keys())
 
     @property
     def chunks_initialized(self):
-        """ List of copies of chunks that have been initialized with some data. """
+        """List of copies of chunks that have been initialized with some data."""
         return [
             Chunk(
                 self._grid[k],
@@ -453,7 +462,7 @@ class Sparse:
 
     @property
     def origin(self):
-        """ A tuple of floats describing the position in world coordinates (x,y,z) of the voxel (0,0,0). """
+        """A tuple of floats describing the position in world coordinates (x,y,z) of the voxel (0,0,0)."""
         return self._origin
 
     @origin.setter
@@ -469,7 +478,7 @@ class Sparse:
 
     @property
     def spacing(self):
-        """ A tuple of floats describing the (width,height,length) of the cubical cells that compose the data set. """
+        """A tuple of floats describing the (width,height,length) of the cubical cells that compose the data set."""
         return self._spacing
 
     @spacing.setter
@@ -720,7 +729,7 @@ class Sparse:
         return to_update, prev
 
     def _get_keys_for_run(self, envelope, skip_neighbours):
-        """ Helper method to determine keys which Sparse will be iterated over during `run` method """
+        """Helper method to determine keys which Sparse will be iterated over during `run` method"""
         if envelope == (0, 0, 0):
             keys = set(self._grid.keys())
         else:
@@ -730,7 +739,7 @@ class Sparse:
                 conv_size = np.array([2, 2, 2]) + np.ceil(
                     np.array(envelope) / np.array(self.chunks)
                 ).astype(np.uint16)
-                neighbours = scipy.ndimage.filters.convolve(
+                neighbours = scipy.ndimage.convolve(
                     self.grid_mask.astype(np.uint16) != 0xFFFF,
                     np.ones(conv_size),
                     mode="constant",
@@ -1090,7 +1099,7 @@ class Sparse:
         key = slice_normalize(key, self.shape)
         shape = slice_shape(key, self.shape)
 
-        if np.product(shape) == 0:
+        if np.prod(shape) == 0:
             return
 
         if np.shape(val) != shape:
@@ -1362,6 +1371,8 @@ class Sparse:
         return s
 
     def astype(self, dtype):
-        new_sparse = Sparse.empty_like(self, fill_value=dtype(self.fill_value), dtype=dtype)
+        new_sparse = Sparse.empty_like(
+            self, fill_value=dtype(self.fill_value), dtype=dtype
+        )
         new_sparse.copy_from(self)
         return new_sparse

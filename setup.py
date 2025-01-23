@@ -47,10 +47,9 @@ setup(
         'Topic :: Multimedia :: Graphics :: 3D Modeling',
         'Topic :: Scientific/Engineering :: Medical Science Apps.',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ]
     , project_urls={
         'Source': 'https://github.com/K3D-tools/chunky3d',

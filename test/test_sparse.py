@@ -52,7 +52,7 @@ class TestImage(unittest.TestCase):
     def test_getitem(self):
         shp = (234, 231, 128)
         mga = np.random.rand(shp[0], shp[1], shp[2])
-        s = Sparse(shp, dtype=np.float_, chunks=(16, 32, 8), fill_value=0)
+        s = Sparse(shp, dtype=np.float64, chunks=(16, 32, 8), fill_value=0)
         s.set((0, 0, 0), mga)
 
         w2 = s[-138:-10:2, -223:-39:5, 120:128:1]
@@ -63,7 +63,7 @@ class TestImage(unittest.TestCase):
     def test_getitem_simple_vs_slice(self):
         shp = (234, 231, 128)
         mga = np.random.rand(*shp)
-        s = Sparse(shp, dtype=np.float_, chunks=(16, 32, 8), fill_value=0)
+        s = Sparse(shp, dtype=np.float64, chunks=(16, 32, 8), fill_value=0)
         s.set((0, 0, 0), mga)
 
         for _ in range(10):
@@ -74,8 +74,8 @@ class TestImage(unittest.TestCase):
 
     def test_setitem_simple_vs_slice(self):
         shp = (23, 12, 128)
-        s_point = Sparse(shp, dtype=np.float_, chunks=(16, 32, 8), fill_value=0)
-        s_slice = Sparse(shp, dtype=np.float_, chunks=(16, 32, 8), fill_value=0)
+        s_point = Sparse(shp, dtype=np.float64, chunks=(16, 32, 8), fill_value=0)
+        s_slice = Sparse(shp, dtype=np.float64, chunks=(16, 32, 8), fill_value=0)
 
         s_point[0, 1, 2] = 3
         s_slice[0:1, 1:2, 2:3] = 3
@@ -156,7 +156,7 @@ class TestImage(unittest.TestCase):
         mask_size = np.zeros(s._block_shape, dtype=np.int32).__sizeof__()
         after_grid_mask = s.__sizeof__()
         self.assertEqual(after_grid_mask, defragmented + mask_size - None.__sizeof__())
-    
+
     def test_astype(self):
         grid_shape = (4, 4, 4)
         chunk_shape = 4

@@ -3,7 +3,7 @@ import warnings
 from collections import Counter
 
 import numpy as np
-from skimage.morphology import skeletonize_3d
+from skimage.morphology import skeletonize
 
 from .helpers import slice_normalize, min_dtype, max_dtype
 from .chunky import Sparse
@@ -54,7 +54,7 @@ def _try_import_itk_thickness(import_error=True):
     except ImportError:
         _have_itk = False
         _have_itk_thickness = False
-    
+
     if not import_error:
         return
 
@@ -293,7 +293,7 @@ def mul(sparse_a: Sparse, sparse_b: Sparse):
 
 def add(sparse_a, sparse_b):
     sparse_a.run_multivariate(lambda a, b: a + b[0], [sparse_b])
-    sparse_a.fill_value = sparse_a.fill_value + sparse_b.fill_value    
+    sparse_a.fill_value = sparse_a.fill_value + sparse_b.fill_value
 
 
 def subtract(sparse_a, sparse_b):
@@ -418,7 +418,7 @@ def thinning(sparse, envelope, multiprocesses=1):
     """1 pixel-thin wire skeletonization"""
     sparse.run(
         lambda data, prev: (
-            (skeletonize_3d(data) > 0).astype(data.dtype),
+            (skeletonize(data) > 0).astype(data.dtype),
             prev,
         ),
         envelope=envelope,
